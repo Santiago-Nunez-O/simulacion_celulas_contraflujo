@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulación células a contraflujo</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #11151b;
+      --panel: rgba(25, 31, 40, .92);
+      --panel-light: rgba(42, 51, 64, .78);
+      --surface: #1b232d;
+      --surface-deep: #0c1117;
+      --accent: #62d9ff;
+      --accent-strong: #9be7ff;
+      --positive: #91e6a0;
+      --ink: #e8eef4;
+      --muted: #91a0af;
+      --line: rgba(155, 231, 255, .24);
+      --cyan: var(--accent);
+      --mint: var(--positive);
+      --mono: "Share Tech Mono", monospace;
+      --display: "Rajdhani", sans-serif;
+    }
+
+    :root[data-theme="light"] {
+      --void: #e9edf1;
+      --panel: rgba(255, 255, 255, .93);
+      --panel-light: rgba(232, 238, 243, .9);
+      --surface: #f5f8fa;
+      --surface-deep: #dfe7ed;
+      --accent: #126b91;
+      --accent-strong: #0b4f6c;
+      --positive: #277a45;
+      --ink: #1c2a35;
+      --muted: #637482;
+      --line: rgba(18, 107, 145, .28);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--void); color: var(--ink); transition: background .25s ease, color .25s ease; }
+    body { overflow: hidden; font-family: var(--display); letter-spacing: .04em; }
+    body::before {
+      position: fixed; inset: 0; z-index: -2; content: "";
+      background: radial-gradient(circle at 75% 20%, rgba(98, 217, 255, .12), transparent 36%),
+        linear-gradient(135deg, var(--void) 0%, var(--surface) 52%, var(--void) 100%);
+    }
+    body::after {
+      position: fixed; inset: 0; z-index: -1; content: ""; pointer-events: none; opacity: .3;
+      background-image: linear-gradient(color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(to bottom, black, transparent 92%);
+    }
+    button, input, select { font: inherit; }
+    .app { width: 100vw; height: 100vh; padding: 20px; display: grid; grid-template-columns: minmax(300px, .9fr) minmax(500px, 1.65fr); grid-template-rows: minmax(370px, 1.35fr) minmax(270px, .85fr); gap: 14px; }
+    .panel { position: relative; min-width: 0; min-height: 0; overflow: hidden; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 30px rgba(8, 15, 22, .16), inset 0 0 28px color-mix(in srgb, var(--accent) 5%, transparent); backdrop-filter: blur(12px); animation: enter .7s both; }
+    .panel::before { position: absolute; top: 0; right: 34px; width: 62px; height: 2px; content: ""; background: var(--positive); }
+    .panel::after { position: absolute; left: 0; bottom: 0; width: 38%; height: 2px; content: ""; background: linear-gradient(90deg, var(--accent), transparent); }
+    .telemetry { grid-column: 1; grid-row: 1; animation-delay: .08s; }
+    .simulator { grid-column: 2; grid-row: 1; animation-delay: .16s; }
+    .parameters { grid-column: 1; grid-row: 2; animation-delay: .24s; }
+    .optimizer { grid-column: 2; grid-row: 2; animation-delay: .32s; }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .theme-toggle { padding: 6px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); font: 10px var(--mono); cursor: pointer; }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { color: var(--positive); font: 11px var(--mono); letter-spacing: .14em; }
+    h1, h2, p { margin: 0; }
+    h1 { color: var(--ink); font-size: clamp(21px, 2.1vw, 34px); line-height: 1; font-weight: 600; letter-spacing: .08em; }
+    h2 { color: var(--ink); font-size: 19px; font-weight: 500; letter-spacing: .09em; }
+    .panel-id { color: var(--muted); font: 11px var(--mono); }
+    .status { display: inline-flex; align-items: center; gap: 7px; color: var(--positive); font: 11px var(--mono); text-transform: uppercase; }
+    .status::before { width: 7px; height: 7px; content: ""; border-radius: 50%; background: currentColor; box-shadow: 0 0 9px currentColor; animation: pulse 1.5s infinite; }
+    .sim-head { position: relative; z-index: 2; display: flex; align-items: end; justify-content: space-between; }
+    .canvas-wrap { position: absolute; inset: 58px 16px 16px; border: 1px solid var(--line); background: var(--surface-deep); }
+    #fluidCanvas { width: 100%; height: 100%; display: block; }
+    .canvas-readout { position: absolute; top: 12px; left: 12px; color: var(--muted); font: 11px var(--mono); line-height: 1.7; }
+    .canvas-readout strong { color: var(--cyan); font-weight: 400; }
+    .chart { width: 100%; height: 174px; display: block; margin-top: 8px; overflow: visible; }
+    .chart-tools { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; min-height: 20px; margin-top: 9px; color: var(--ink); font: 12px var(--mono); }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .chart-legend i { width: 12px; height: 3px; display: inline-block; border-radius: 2px; }
+    .chart-tool, .camera-button, .equation-action { padding: 7px 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 12px var(--mono); cursor: pointer; }
+    .chart-tool.active, .chart-tool:hover, .camera-button:hover, .equation-action:hover { border-color: var(--positive); color: var(--positive); }
+    .chart-grid { stroke: color-mix(in srgb, var(--accent) 18%, transparent); stroke-width: 1; }
+    .chart-axis { fill: var(--ink); font: 12px var(--mono); }
+    .chart-title { fill: var(--ink); font: 600 15px var(--display); }
+    .chart-label { fill: var(--ink); font: 11px var(--mono); }
+    .chart-tick { stroke: var(--muted); stroke-width: 1; }
+    .chart-line.msd { fill: none; stroke: var(--accent); stroke-width: 2; filter: drop-shadow(0 0 4px var(--accent)); }
+    .chart-line.auto { fill: none; stroke: var(--positive); stroke-width: 2; filter: drop-shadow(0 0 4px var(--positive)); }
+    .legend { display: flex; gap: 18px; margin-top: 4px; color: var(--muted); font: 10px var(--mono); }
+    .legend i { display: inline-block; width: 18px; height: 2px; margin: 0 6px 3px 0; background: var(--cyan); box-shadow: 0 0 5px var(--cyan); }
+    .legend i.mint { background: var(--mint); box-shadow: 0 0 5px var(--mint); }
+    .metric-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+    .metric { padding: 9px 10px; background: var(--panel-light); border-left: 2px solid var(--cyan); }
+    .metric label { display: block; color: var(--muted); font: 12px var(--mono); text-transform: uppercase; }
+    .metric strong { display: block; margin-top: 4px; color: var(--ink); font: 22px var(--mono); }
+    .control-math { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(360px, 1.45fr); gap: 18px; height: calc(100% - 38px); }
+    .control-math > section + section { border-left: 1px solid var(--line); padding-left: 15px; }
+    .parameter-section { position: relative; padding-right: 38px; overflow: auto; }
+    .parameter-navigator { position: absolute; top: 22px; right: 0; bottom: 6px; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+    .parameter-navigator input { width: 20px; height: 116px; margin: 0; writing-mode: vertical-lr; direction: rtl; accent-color: var(--accent); cursor: pointer; }
+    .parameter-navigator span { color: var(--ink); font: 11px var(--mono); writing-mode: vertical-rl; }
+    .slider-row.focused { padding: 5px 7px; margin-left: -7px; margin-right: -7px; border-left: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    .subhead { color: var(--muted); font: 10px var(--mono); letter-spacing: .12em; }
+    .slider-row { margin-top: 13px; }
+    .slider-label { display: flex; justify-content: space-between; gap: 8px; color: var(--ink); font: 14px var(--mono); line-height: 1.2; }
+    .slider-label span { min-width: 0; }
+    .slider-label output { flex: 0 0 auto; color: var(--accent-strong); font-weight: 700; }
+    input[type="range"] { width: 100%; height: 19px; margin: 5px 0 0; accent-color: var(--accent); cursor: pointer; }
+    .equation { display: grid; place-items: center; height: 84px; margin-top: 10px; padding: 10px; border: 1px solid rgba(100, 255, 218, .2); background: rgba(0, 10, 25, .5); color: var(--mint); font: 16px var(--mono); text-align: center; }
+    .equation small { display: block; margin-top: 7px; color: var(--muted); font: 10px var(--mono); }
+    .equation-lab { margin-top: 10px; padding: 10px; border: 1px solid rgba(184, 242, 90, .28); background: rgba(28, 14, 25, .72); overflow: auto; }
+    .equation-input { display: flex; gap: 7px; margin-top: 8px; }
+    .equation-input input { min-width: 0; flex: 1; padding: 9px 10px; border: 1px solid rgba(255, 138, 91, .35); border-radius: 4px; background: rgba(8, 6, 12, .72); color: var(--ink); font: 14px var(--mono); outline: none; }
+    .equation-input input:focus { border-color: var(--mint); box-shadow: 0 0 0 2px rgba(184, 242, 90, .12); }
+    .equation-input button { padding: 8px 10px; border: 0; border-radius: 2px; background: var(--mint); color: #18200e; font: 700 11px var(--mono); cursor: pointer; }
+    .equation-input button:hover { background: #d2ff82; }
+    .equation-result { min-height: 54px; margin-top: 8px; color: var(--ink); font: 11px/1.55 var(--mono); }
+    .equation-result strong { display: block; color: var(--mint); font-size: 17px; }
+    .equation-result.error strong { color: #ff8a5b; font-size: 11px; }
+    .equation-examples { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .equation-example { padding: 3px 6px; border: 1px solid rgba(255, 138, 91, .25); background: transparent; color: var(--muted); font: 10px var(--mono); cursor: pointer; }
+    .equation-example:hover { color: var(--cyan); border-color: var(--cyan); }
+    .equation-list { display: grid; gap: 6px; max-height: 142px; overflow: auto; margin-top: 8px; }
+    .motion-equation { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 7px; padding: 6px; border-left: 2px solid var(--cyan); background: rgba(8, 6, 12, .45); }
+    .motion-equation input[type="checkbox"] { accent-color: var(--mint); }
+    .motion-equation strong { display: block; color: var(--ink); font: 13px var(--mono); }
+    .motion-equation span { display: block; overflow: hidden; color: var(--muted); font: 12px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+    .motion-equation button { border: 0; background: transparent; color: var(--cyan); font: 16px var(--mono); cursor: pointer; }
+    .camera-panel { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+    .camera-preview { display: none; width: 100%; max-height: 110px; margin-top: 7px; object-fit: cover; border: 1px solid var(--line); }
+    .camera-status { color: var(--muted); font: 10px var(--mono); }
+    .time-controls { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: 16px; display: grid; grid-template-columns: auto minmax(80px, 1fr) auto repeat(7, auto); align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 94%, transparent); }
+    .time-controls label, .time-readout { color: var(--muted); font: 10px var(--mono); }
+    .time-controls input[type="range"] { margin: 0; }
+    .time-button { padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); font: 10px var(--mono); cursor: pointer; }
+    .time-button:hover, .time-button.active { border-color: var(--accent); color: var(--accent); }
+    .log-window { height: calc(100% - 38px); padding: 9px 12px; overflow: hidden; border: 1px solid rgba(0, 229, 255, .18); background: rgba(0, 5, 15, .45); font: 11px/1.7 var(--mono); }
+    .log-line { white-space: nowrap; color: var(--muted); animation: log-in .2s both; }
+    .log-line .time { color: #356079; }
+    .log-line .accent { color: var(--mint); }
+    .log-line .value { color: var(--cyan); }
+    @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 50% { opacity: .35; } }
+    @keyframes log-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 900px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: 390px 500px 390px 290px; } .telemetry, .simulator, .parameters, .optimizer { grid-column: 1; } .telemetry { grid-row: 1; } .simulator { grid-row: 2; } .parameters { grid-row: 3; } .optimizer { grid-row: 4; } }
+    @media (max-width: 680px) { .control-math { grid-template-columns: 1fr; height: auto; } .control-math > section + section { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0 0; } .parameter-section { min-height: 390px; } }
+    @media (max-width: 560px) { .app { padding: 10px; gap: 10px; } .panel { padding: 12px; } .canvas-wrap { inset: 54px 12px 12px; } .control-math { gap: 9px; } .control-math > section + section { padding-left: 9px; } .time-controls { grid-template-columns: auto 1fr auto auto auto; } .time-controls .optional-time-button { display: none; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel telemetry" aria-labelledby="telemetry-title">
+      <div class="panel-heading"><div><div class="eyebrow">01 / TELEMETRY STREAM</div><h2 id="telemetry-title">Live observables</h2></div><div><button class="theme-toggle" id="themeToggle" type="button">THEME: DARK</button> <span class="status" id="connectionStatus">connecting</span></div></div>
+      <svg class="chart" id="telemetryChart" viewBox="0 0 500 150" preserveAspectRatio="none" aria-label="Descriptive telemetry chart">
+        <text id="chartTitle" x="56" y="15" class="chart-title">MSD en función del tiempo</text>
+        <path class="chart-grid" d="M56 28H480 M56 64H480 M56 100H480 M56 136H480 M56 28V136 M162 28V136 M268 28V136 M374 28V136 M480 28V136" />
+        <path class="chart-tick" d="M56 28V136 M56 136H480" />
+        <polyline id="msdLine" class="chart-line msd" points="56,136" />
+        <polyline id="autoLine" class="chart-line auto" points="56,136" />
+        <g id="chartBars"></g><path id="chartReference" class="chart-tick" d="" stroke-dasharray="4 4" />
+        <text x="8" y="32" class="chart-label" id="chartUnit">valor</text><text x="250" y="149" class="chart-label">tiempo (frames)</text>
+        <text x="42" y="140" class="chart-axis">0</text><text x="42" y="104" class="chart-axis">1</text><text x="42" y="68" class="chart-axis">2</text><text x="42" y="32" class="chart-axis">3</text>
+      </svg>
+      <div class="chart-tools" aria-label="Observable selector"><button class="chart-tool active" type="button" data-observable="msd">MSD</button><button class="chart-tool" type="button" data-observable="velocityDistribution">VELOCIDADES</button><button class="chart-tool" type="button" data-observable="temporalCorrelation">AUTOCORRELACIÓN</button><button class="chart-tool" type="button" data-observable="spatialCorrelation">CORRELACIÓN ESPACIAL</button><button class="chart-tool" type="button" data-observable="pairDistribution">g(r)</button></div>
+      <div id="chartLegend" class="chart-legend" aria-label="Leyenda del gráfico"></div>
+      <div class="metric-strip"><div class="metric"><label>mean speed</label><strong id="meanSpeed">--</strong></div><div class="metric"><label>density ρ</label><strong id="density">--</strong></div></div>
+    </section>
+
+    <section class="panel simulator" aria-labelledby="simulator-title">
+      <div class="sim-head"><div><div class="eyebrow">02 / MOVIMIENTO</div><h1 id="simulator-title">SIMULACIÓN CÉLULAS A CONTRAFLUJO // <span id="stepCounter">000000</span></h1></div><div class="panel-id" id="canvasReadout">CANVAS / 100 × 100</div></div>
+      <div class="canvas-wrap"><canvas id="fluidCanvas"></canvas><div class="canvas-readout">NODES <strong id="particleCount">--</strong><br>FRAME <strong id="frameRate">20.0 HZ</strong><br>STATE <strong>CONTRA-FLOW</strong></div></div>
+      <div class="time-controls"><label for="timeSlider">TIEMPO</label><input id="timeSlider" type="range" min="0" max="0" value="0" step="1" /><span class="time-readout" id="timeReadout">t = 0</span><button class="time-button" id="startTimeButton" type="button" title="Ir al primer estado">|&lt;</button><button class="time-button" id="backOneButton" type="button" title="Retroceder un estado">−1</button><button class="time-button" id="backTenButton" type="button" title="Retroceder diez estados">−10</button><button class="time-button" id="forwardOneButton" type="button" title="Avanzar un estado">+1</button><button class="time-button" id="forwardTenButton" type="button" title="Avanzar diez estados">+10</button><button class="time-button active optional-time-button" id="liveButton" type="button">LIVE</button><button class="time-button optional-time-button" id="resetButton" type="button">REINICIAR</button></div>
+    </section>
+
+    <section class="panel parameters" aria-labelledby="parameters-title">
+      <div class="panel-heading"><div><div class="eyebrow">03 / MODEL CONTROL</div><h2 id="parameters-title">Parameters & equations</h2></div><span class="panel-id">θ VECTOR</span></div>
+      <div class="control-math"><section class="parameter-section"><div class="subhead">INPUT VECTOR / θ</div>
+        <div class="parameter-navigator"><span>PARAMETROS</span><input id="parameterSlider" type="range" min="0" max="5" step="1" value="0" aria-label="Recorrer parámetros ajustables" /><span id="parameterPosition">1 / 6</span></div>
+        <div class="slider-row" data-parameter="v0"><div class="slider-label"><span>V₀ / propulsion</span><output id="v0Value">1.80</output></div><input data-key="v0" id="v0" type="range" min="0" max="5" step=".01" value="1.8" /></div>
+        <div class="slider-row" data-parameter="u0"><div class="slider-label"><span>u₀ / repulsion</span><output id="u0Value">0.90</output></div><input data-key="u0" id="u0" type="range" min="0" max="5" step=".01" value=".9" /></div>
+        <div class="slider-row" data-parameter="sigma"><div class="slider-label"><span>σ / angular noise</span><output id="sigmaValue">0.35</output></div><input data-key="sigma" id="sigma" type="range" min="0" max="5" step=".01" value=".35" /></div>
+        <div class="slider-row" data-parameter="alignment"><div class="slider-label"><span>w / alignment</span><output id="alignmentValue">1.25</output></div><input data-key="alignment" id="alignment" type="range" min="0" max="5" step=".01" value="1.25" /></div>
+        <div class="slider-row" data-parameter="nodes"><div class="slider-label"><span>N / nodes</span><output id="nodesValue">84</output></div><input data-key="nodes" id="nodes" type="range" min="8" max="300" step="1" value="84" /></div>
+        <div class="slider-row" data-parameter="canvasSize"><div class="slider-label"><span>L / canvas size</span><output id="canvasSizeValue">100</output></div><input data-key="canvasSize" id="canvasSize" type="range" min="40" max="300" step="5" value="100" /></div>
+      </section><section><div class="subhead">MOTION EQUATIONS / ACTIVE SET</div>
+        <div class="equation-lab">
+          <div class="equation-input"><input id="equationName" type="text" value="Nueva ecuación" aria-label="Equation name" /><select id="equationKind" aria-label="Equation role"><option value="propulsion">propulsión</option><option value="repulsion">repulsión</option><option value="alignment">alineación</option><option value="noise">ruido</option></select></div>
+          <div class="equation-input"><input id="equationExpression" type="text" value="dr/dt = V₀ (cos θ, sin θ)" aria-label="Motion equation" /><button id="addEquation" class="equation-action" type="button">ADD</button></div>
+          <div id="equationList" class="equation-list"></div>
+          <div class="camera-panel"><button id="cameraButton" class="camera-button" type="button">CAMERA / SCAN WHITEBOARD</button><span id="cameraStatus" class="camera-status">OCR ready</span><video id="cameraPreview" class="camera-preview" autoplay playsinline></video><canvas id="scanCanvas" hidden></canvas></div>
+        </div>
+        <div class="equation">d𝐫ᵢ/dt = propulsión + repulsión + ruido<small>solo ecuaciones activas afectan al campo</small></div>
+      </section></div>
+    </section>
+
+    <section class="panel optimizer" aria-labelledby="optimizer-title"><div class="panel-heading"><div><div class="eyebrow">04 / PARAMETER ENGINE</div><h2 id="optimizer-title">Optimization trace</h2></div><span class="status">optimizer running</span></div><div class="log-window" id="logWindow" aria-live="polite"></div></section>
+  </main>
+  <script>
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem("simulacion-theme") || "dark";
+    root.dataset.theme = savedTheme;
+    const themeToggle = document.getElementById("themeToggle");
+    themeToggle.textContent = `THEME: ${savedTheme.toUpperCase()}`;
+    themeToggle.addEventListener("click", () => {
+      const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
+      root.dataset.theme = nextTheme;
+      localStorage.setItem("simulacion-theme", nextTheme);
+      themeToggle.textContent = `THEME: ${nextTheme.toUpperCase()}`;
+    });
+    const canvas = document.getElementById("fluidCanvas");
+    const context = canvas.getContext("2d");
+    const status = document.getElementById("connectionStatus");
+    const history = { msd: [], autocorrelation: [], meanSpeed: [], density: [] };
+    let currentObservables = { msd: [], velocityDistribution: [], temporalCorrelation: [], spatialCorrelation: [], pairDistribution: [] };
+    const frames = [];
+    const params = { v0: 1.8, u0: .9, sigma: .35, alignment: 1.25, nodes: 84, canvasSize: 100 };
+    let simulationSize = 100;
+    let selectedObservable = "msd";
+    let playbackMode = false;
+    let currentFrameIndex = 0;
+    let equations = [
+      { id: "propulsion", name: "Propulsión propia", kind: "propulsion", expression: "dr/dt = V₀ (cos θ, sin θ)", enabled: true },
+      { id: "repulsion", name: "Repulsión de contacto", kind: "repulsion", expression: "Fᵢⱼ = u₀ (2R - rᵢⱼ) r̂ᵢⱼ", enabled: true },
+      { id: "alignment", name: "Alineación angular", kind: "alignment", expression: "dθ/dt = w Σ sin(θⱼ - θᵢ)", enabled: true },
+      { id: "noise", name: "Ruido angular", kind: "noise", expression: "dθ = σ dWₜ", enabled: true },
+    ];
+    let stream;
+    let lastTimestamp = 0;
+    let lastReceivedAt = 0;
+    let reconnectTimer;
+
+    function resizeCanvas() {
+      const bounds = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(bounds.width * ratio));
+      canvas.height = Math.max(1, Math.floor(bounds.height * ratio));
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function drawParticles(particles) {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      context.clearRect(0, 0, width, height);
+      context.strokeStyle = "rgba(255, 138, 91, .1)";
+      context.lineWidth = 1;
+      for (let line = 1; line < 10; line += 1) {
+        const x = (width / 10) * line; const y = (height / 10) * line;
+        context.beginPath(); context.moveTo(x, 0); context.lineTo(x, height); context.stroke();
+        context.beginPath(); context.moveTo(0, y); context.lineTo(width, y); context.stroke();
+      }
+      particles.forEach(([x, y, vx, vy, angle], index) => {
+        const px = x / simulationSize * width; const py = y / simulationSize * height;
+        const direction = index % 2 === 0 ? "#ff8a5b" : "#b8f25a";
+        const length = 3 + Math.min(9, Math.hypot(vx, vy) * 2);
+        context.save(); context.translate(px, py); context.rotate(angle);
+        context.shadowBlur = 12; context.shadowColor = direction; context.fillStyle = direction;
+        context.beginPath(); context.arc(0, 0, 2.1, 0, Math.PI * 2); context.fill();
+        context.globalAlpha = .45; context.beginPath(); context.moveTo(-length, 0); context.lineTo(-2, 0); context.strokeStyle = direction; context.stroke();
+        context.restore();
+      });
+    }
+
+    function updateChart() {
+      const points = (series) => series.map(([, value], index) => {
+        const x = 56 + index / Math.max(1, series.length - 1) * 424;
+        const maxAbs = Math.max(...series.map((item) => Math.abs(item[1])), 1e-9);
+        const normalized = value / maxAbs;
+        return `${x.toFixed(1)},${(82 - normalized * 54).toFixed(1)}`;
+      }).join(" ");
+      const definitions = {
+        msd: { title: "Desplazamiento Cuadrático Medio (MSD)", unit: "MSD(τ)", legend: [["MSD(τ)", "var(--cyan)"]], lines: [["MSD(τ)", currentObservables.msd.map(([x, y]) => [x, y])]] },
+        velocityDistribution: { title: "Distribución de Velocidades", unit: "P(v)", legend: [["P(vₓ)", "var(--cyan)"], ["P(vᵧ)", "var(--positive)"]], lines: [["P(vₓ)", currentObservables.velocityDistribution.map(([x, y]) => [x, y])], ["P(vᵧ)", currentObservables.velocityDistribution.map(([x, , y]) => [x, y])]] },
+        temporalCorrelation: { title: "Autocorrelación Temporal de Velocidades", unit: "C(τ)", legend: [["C̃ₓₓ(τ)", "#ef5350"], ["C̃ᵧᵧ(τ)", "#ff9800"], ["Referencia C = 0", "var(--muted)"]], lines: [["C̃ₓₓ(τ)", currentObservables.temporalCorrelation.map(([x, y]) => [x, y])], ["C̃ᵧᵧ(τ)", currentObservables.temporalCorrelation.map(([x, , y]) => [x, y])]] },
+        spatialCorrelation: { title: "Correlación Espacial de Velocidades", unit: "C(r)", legend: [["C̃ₓₓ(r)", "#ef5350"], ["C̃ᵧᵧ(r)", "#ff9800"], ["Referencia C = 0", "var(--muted)"]], lines: [["C̃ₓₓ(r)", currentObservables.spatialCorrelation.map(([x, y]) => [x, y])], ["C̃ᵧᵧ(r)", currentObservables.spatialCorrelation.map(([x, , y]) => [x, y])]] },
+        pairDistribution: { title: "Función de Distribución de Pares g(r)", unit: "g(r)", legend: [["g(r)", "#4caf50"], ["Sistema homogéneo g(r) = 1", "var(--muted)"]], lines: [["g(r)", currentObservables.pairDistribution]] },
+      };
+      const definition = definitions[selectedObservable];
+      const firstSeries = definition.lines[0]?.[1] ?? [];
+      document.getElementById("msdLine").setAttribute("points", points(firstSeries));
+      document.getElementById("autoLine").setAttribute("points", definition.lines[1] ? points(definition.lines[1][1]) : "");
+      const chartBars = document.getElementById("chartBars");
+      chartBars.innerHTML = "";
+      if (selectedObservable === "velocityDistribution") {
+        const series = currentObservables.velocityDistribution;
+        const maxValue = Math.max(...series.flatMap(([, vx, vy]) => [vx, vy]), 1e-9);
+        const barWidth = 424 / Math.max(1, series.length) * .72;
+        series.forEach(([, vx, vy], index) => {
+          const x = 56 + index / Math.max(1, series.length - 1) * 424 - barWidth / 2;
+          const vxHeight = vx / maxValue * 108;
+          const vyHeight = vy / maxValue * 108;
+          chartBars.insertAdjacentHTML("beforeend", `<rect x="${x.toFixed(1)}" y="${(136 - vxHeight).toFixed(1)}" width="${(barWidth / 2).toFixed(1)}" height="${vxHeight.toFixed(1)}" fill="var(--cyan)" opacity=".72"/><rect x="${(x + barWidth / 2).toFixed(1)}" y="${(136 - vyHeight).toFixed(1)}" width="${(barWidth / 2).toFixed(1)}" height="${vyHeight.toFixed(1)}" fill="var(--positive)" opacity=".72"/>`);
+        });
+        document.getElementById("msdLine").setAttribute("points", "");
+        document.getElementById("autoLine").setAttribute("points", "");
+      }
+      document.getElementById("chartReference").setAttribute("d", selectedObservable === "pairDistribution" ? "M56 100H480" : ["temporalCorrelation", "spatialCorrelation"].includes(selectedObservable) ? "M56 82H480" : "");
+      const lineColors = selectedObservable === "temporalCorrelation" || selectedObservable === "spatialCorrelation" ? ["#ef5350", "#ff9800"] : selectedObservable === "pairDistribution" ? ["#4caf50", "#4caf50"] : ["var(--cyan)", "var(--positive)"];
+      document.querySelector(".chart-line.msd").style.stroke = lineColors[0];
+      document.querySelector(".chart-line.auto").style.stroke = lineColors[1];
+      document.getElementById("chartTitle").textContent = definition.title;
+      document.getElementById("chartUnit").textContent = definition.unit;
+      document.getElementById("chartLegend").innerHTML = definition.legend.map(([label, color]) => `<span><i style="background:${color}"></i>${label}</span>`).join("");
+    }
+
+    function addLog(optimizer, metrics) {
+      const logWindow = document.getElementById("logWindow");
+      const now = new Date().toISOString().slice(11, 19);
+      const line = document.createElement("div");
+      line.className = "log-line";
+      line.innerHTML = `<span class="time">[${now}]</span> <span class="accent">OPTIMIZER</span> iter=${String(optimizer.iteration).padStart(4, "0")} tol=<span class="value">${optimizer.tolerance.toFixed(4)}</span> err=<span class="value">${optimizer.minimumError.toFixed(5)}</span> msd=${metrics.msd.toFixed(2)}`;
+      logWindow.append(line);
+      while (logWindow.children.length > 9) logWindow.firstElementChild.remove();
+      logWindow.scrollTop = logWindow.scrollHeight;
+    }
+
+    function renderFrame(payload) {
+      if (!payload) return;
+      simulationSize = payload.simulation?.canvasSize || simulationSize;
+      drawParticles(payload.particles);
+      document.getElementById("stepCounter").textContent = String(payload.step).padStart(6, "0");
+      document.getElementById("particleCount").textContent = payload.particles.length;
+      document.getElementById("canvasReadout").textContent = `CANVAS / ${simulationSize} × ${simulationSize}`;
+      document.getElementById("meanSpeed").textContent = payload.metrics.meanSpeed.toFixed(2);
+      document.getElementById("density").textContent = payload.metrics.density.toFixed(4);
+      document.getElementById("timeReadout").textContent = `t = ${payload.step}`;
+      currentObservables = payload.observables || currentObservables;
+    }
+
+    function receiveTelemetry(payload) {
+      if (payload.step === 0) {
+        frames.length = 0;
+        currentFrameIndex = 0;
+        Object.keys(history).forEach((key) => { history[key].length = 0; });
+      }
+      frames.push(payload);
+      if (frames.length > 240) {
+        frames.shift();
+        if (playbackMode) currentFrameIndex = Math.max(0, currentFrameIndex - 1);
+      }
+      Object.keys(history).forEach((key) => history[key].push(payload.metrics[key]));
+      if (history.msd.length > 70) Object.keys(history).forEach((key) => history[key].shift());
+      const timeSlider = document.getElementById("timeSlider");
+      timeSlider.max = Math.max(0, frames.length - 1);
+      if (!playbackMode) {
+        currentFrameIndex = Math.max(0, frames.length - 1);
+        timeSlider.value = currentFrameIndex;
+        renderFrame(payload);
+      }
+      updateChart();
+      if (!lastTimestamp || payload.timestamp - lastTimestamp > 450) addLog(payload.optimizer, payload.metrics);
+      lastTimestamp = payload.timestamp;
+      lastReceivedAt = Date.now();
+    }
+
+    document.getElementById("timeSlider").addEventListener("input", (event) => {
+      playbackMode = true;
+      document.getElementById("liveButton").classList.remove("active");
+      currentFrameIndex = Number(event.target.value);
+      renderFrame(frames[currentFrameIndex] || frames[frames.length - 1]);
+    });
+    function moveTime(offset) {
+      const timeSlider = document.getElementById("timeSlider");
+      const nextIndex = Math.max(0, Math.min(frames.length - 1, currentFrameIndex + offset));
+      playbackMode = true;
+      document.getElementById("liveButton").classList.remove("active");
+      currentFrameIndex = nextIndex;
+      timeSlider.value = nextIndex;
+      renderFrame(frames[nextIndex] || frames[frames.length - 1]);
+    }
+
+    document.getElementById("startTimeButton").addEventListener("click", () => {
+      const timeSlider = document.getElementById("timeSlider");
+      timeSlider.value = 0;
+      playbackMode = true;
+      currentFrameIndex = 0;
+      document.getElementById("liveButton").classList.remove("active");
+      renderFrame(frames[0] || frames[frames.length - 1]);
+    });
+    document.getElementById("backOneButton").addEventListener("click", () => moveTime(-1));
+    document.getElementById("backTenButton").addEventListener("click", () => moveTime(-10));
+    document.getElementById("forwardOneButton").addEventListener("click", () => moveTime(1));
+    document.getElementById("forwardTenButton").addEventListener("click", () => moveTime(10));
+    document.getElementById("liveButton").addEventListener("click", () => {
+      playbackMode = false;
+      document.getElementById("liveButton").classList.add("active");
+      const timeSlider = document.getElementById("timeSlider");
+      currentFrameIndex = Math.max(0, frames.length - 1);
+      timeSlider.value = currentFrameIndex;
+      renderFrame(frames[frames.length - 1]);
+    });
+    document.getElementById("resetButton").addEventListener("click", () => {
+      playbackMode = false;
+      document.getElementById("liveButton").classList.add("active");
+      postControl({ command: "reset" });
+    });
+
+    function postControl(payload) {
+      fetch("/api/config", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }).catch(() => {
+        status.textContent = "control offline";
+      });
+    }
+
+    function syncEquations() {
+      postControl({ equations });
+    }
+
+    function renderEquations() {
+      const list = document.getElementById("equationList");
+      list.innerHTML = "";
+      equations.forEach((equation) => {
+        const row = document.createElement("div");
+        row.className = "motion-equation";
+        row.innerHTML = `<input type="checkbox" ${equation.enabled ? "checked" : ""} aria-label="Activar ${equation.name}"><div><strong>${equation.name}</strong><span>${equation.expression}</span></div><button type="button" aria-label="Eliminar ${equation.name}">×</button>`;
+        row.querySelector("input").addEventListener("change", (event) => { equation.enabled = event.target.checked; syncEquations(); });
+        row.querySelector("button").addEventListener("click", () => { equations = equations.filter((item) => item.id !== equation.id); renderEquations(); syncEquations(); });
+        list.append(row);
+      });
+    }
+
+    document.getElementById("addEquation").addEventListener("click", () => {
+      const name = document.getElementById("equationName").value.trim() || "Nueva ecuación";
+      const expression = document.getElementById("equationExpression").value.trim();
+      if (!expression) return;
+      equations.push({ id: `custom-${Date.now()}`, name, kind: document.getElementById("equationKind").value, expression, enabled: true });
+      renderEquations(); syncEquations();
+    });
+    document.querySelectorAll(".chart-tool").forEach((button) => button.addEventListener("click", () => {
+      selectedObservable = button.dataset.observable;
+      document.querySelectorAll(".chart-tool").forEach((item) => item.classList.toggle("active", item === button));
+      updateChart();
+    }));
+    let cameraStream;
+    document.getElementById("cameraButton").addEventListener("click", async () => {
+      const video = document.getElementById("cameraPreview");
+      const cameraStatus = document.getElementById("cameraStatus");
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error("La cámara no está disponible en este contexto.");
+        cameraStatus.textContent = "Activando cámara...";
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        video.srcObject = cameraStream;
+        video.style.display = "block";
+        await new Promise((resolve) => { video.onloadedmetadata = resolve; });
+        const scanCanvas = document.getElementById("scanCanvas");
+        scanCanvas.width = video.videoWidth; scanCanvas.height = video.videoHeight;
+        scanCanvas.getContext("2d").drawImage(video, 0, 0);
+        cameraStatus.textContent = "Leyendo pizarra...";
+        if (!window.Tesseract) throw new Error("OCR no disponible; revisa la conexión.");
+        const result = await Tesseract.recognize(scanCanvas, "eng", { logger: (message) => {
+          if (message.status === "recognizing text") cameraStatus.textContent = `OCR ${Math.round(message.progress * 100)}%`;
+        }});
+        const detected = result.data.text.replace(/\s+/g, " ").trim();
+        if (detected) {
+          document.getElementById("equationExpression").value = detected;
+          cameraStatus.textContent = "Ecuación detectada; revisa y pulsa ADD.";
+        } else cameraStatus.textContent = "No se detectó texto; intenta otra captura.";
+      } catch (error) {
+        cameraStatus.textContent = error.message;
+      } finally {
+        cameraStream?.getTracks().forEach((track) => track.stop());
+        cameraStream = undefined;
+      }
+    });
+    renderEquations();
+
+    function connect() {
+      if (stream?.readyState === EventSource.OPEN || stream?.readyState === EventSource.CONNECTING) return;
+      stream = new EventSource("/events");
+      stream.onopen = () => { lastReceivedAt = Date.now(); status.textContent = "stream online"; status.style.color = "var(--mint)"; postControl({ ...params, equations }); };
+      stream.onmessage = (event) => receiveTelemetry(JSON.parse(event.data));
+      stream.onerror = () => { status.textContent = "reconnecting"; status.style.color = "#ffcf66"; stream.close(); clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, 800); };
+    }
+
+    setInterval(() => {
+      if (stream?.readyState === EventSource.OPEN && lastReceivedAt && Date.now() - lastReceivedAt > 2000) {
+        status.textContent = "restarting stream";
+        stream.close();
+        connect();
+      }
+    }, 1000);
+
+    document.querySelectorAll("input[type=range][data-key]").forEach((input) => input.addEventListener("input", () => {
+      const value = Number(input.value); const key = input.dataset.key; params[key] = value;
+      document.getElementById(`${key}Value`).textContent = ["nodes", "canvasSize"].includes(key) ? String(value) : value.toFixed(2);
+      postControl({ [key]: value });
+    }));
+    const parameterRows = [...document.querySelectorAll("[data-parameter]")];
+    const parameterSlider = document.getElementById("parameterSlider");
+    const parameterPosition = document.getElementById("parameterPosition");
+    function focusParameter(index) {
+      const safeIndex = Math.max(0, Math.min(parameterRows.length - 1, index));
+      const row = parameterRows[safeIndex];
+      parameterSlider.value = safeIndex;
+      parameterPosition.textContent = `${safeIndex + 1} / ${parameterRows.length}`;
+      parameterRows.forEach((item) => item.classList.toggle("focused", item === row));
+      row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      row.querySelector("input[type=range]").focus({ preventScroll: true });
+    }
+    parameterSlider.addEventListener("input", () => focusParameter(Number(parameterSlider.value)));
+    focusParameter(0);
+    connect();
+  </script>
+</body>
+</html>

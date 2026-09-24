@@ -14,8 +14,10 @@ def simulate(
     m=1.0,
     sigma_pos=0.0,
     distribucion_angulos="contraflujo",
+    ecuaciones_activas=None,
 ):
     V0, u0, w, sigma_angulo = theta
+    ecuaciones = {"propulsion", "repulsion", "alignment", "noise"} if ecuaciones_activas is None else set(ecuaciones_activas)
 
     rng = np.random.default_rng(seed)
 
@@ -38,89 +40,74 @@ def simulate(
     vel_x = np.zeros(num_celulas, dtype=float)
     vel_y = np.zeros(num_celulas, dtype=float)
 
-    size_grilla = 2.0 * radio
-    columnas = max(1, int(limx / size_grilla))
-    filas = max(1, int(limy / size_grilla))
-
     def paso_temporal():
         nonlocal pos_x, pos_y, posx_real, posy_real, angulos, vel_x, vel_y
-        fuerza_x.fill(0.0)
-        fuerza_y.fill(0.0)
-        alineacion.fill(0.0)
 
-        for i in range(num_celulas):
-            grid_x1 = int(pos_x[i] / size_grilla)
-            grid_y1 = int(pos_y[i] / size_grilla)
+        # 1. Broadcasting para obtener diferencias (N, N)
+        dx = pos_x[:, None] - pos_x[None, :]
+        dy = pos_y[:, None] - pos_y[None, :]
 
-            for j in range(num_celulas):
-                if i == j:
-                    continue
+        # 2. Condiciones de borde periódicas (camino mas corto)
+        dx = (dx + limx / 2.0) % limx - limx / 2.0
+        dy = (dy + limy / 2.0) % limy - limy / 2.0
 
-                grid_x2 = int(pos_x[j] / size_grilla)
-                grid_y2 = int(pos_y[j] / size_grilla)
+        # 3. Distancia entre todos los pares
+        distancia = np.sqrt(dx * dx + dy * dy)
 
-                dist_grillax = abs(grid_x1 - grid_x2)
-                dist_grillay = abs(grid_y1 - grid_y2)
+        # 4. Máascara para interacciones validas (excluye dist=0)
+        mask = (distancia > 0.0) & (distancia < 2.0 * radio)
 
-                if dist_grillax > columnas / 2.0:
-                    dist_grillax = columnas - dist_grillax
-                if dist_grillay > filas / 2.0:
-                    dist_grillay = filas - dist_grillay
+        # 5. Calculo de repulsion
+        repulsion = np.zeros_like(distancia)
+        if "repulsion" in ecuaciones:
+            repulsion[mask] = (2.0 * radio - distancia[mask]) / distancia[mask]
 
-                if dist_grillax > 1 or dist_grillay > 1:
-                    continue
+        # 6. Suma de fuerzas sobre el eje 1 (columnas)
+        fuerza_x[:] = np.sum(repulsion * dx, axis=1)
+        fuerza_y[:] = np.sum(repulsion * dy, axis=1)
 
-                dx = pos_x[i] - pos_x[j]
-                dy = pos_y[i] - pos_y[j]
+        # 7. Cálculo de alineación
+        d_angulos = angulos[None, :] - angulos[:, None]
+        alineacion_matriz = np.zeros_like(distancia)
+        if "alignment" in ecuaciones:
+            alineacion_matriz[mask] = w * np.sin(m * d_angulos[mask])
+        alineacion[:] = np.sum(alineacion_matriz, axis=1)
 
-                if dx > limx / 2.0:
-                    dx -= limx
-                elif dx < -limx / 2.0:
-                    dx += limx
-
-                if dy > limy / 2.0:
-                    dy -= limy
-                elif dy < -limy / 2.0:
-                    dy += limy
-
-                distancia = np.sqrt(dx * dx + dy * dy)
-                if 0.0 < distancia < 2.0 * radio:
-                    repulsion = (2.0 * radio - distancia) / distancia
-                    fuerza_x[i] += repulsion * dx
-                    fuerza_y[i] += repulsion * dy
-                    alineacion[i] += w * np.sin(m * (angulos[j] - angulos[i]))
-
+        # Actualización de ángulos con ruido
         gauss_angulos = rng.normal(0.0, 1.0, num_celulas)
-        angulos[:] = (
-            angulos + (alineacion * dt) + sigma_angulo * gauss_angulos * np.sqrt(dt)
-        ) % (2.0 * np.pi)
+        ruido_angular = sigma_angulo * gauss_angulos * np.sqrt(dt) if "noise" in ecuaciones else 0.0
+        angulos[:] = (angulos + (alineacion * dt) + ruido_angular) % (2.0 * np.pi)
 
+        # Ruidos posicionales
         gauss_x = rng.normal(0.0, 1.0, num_celulas)
         gauss_y = rng.normal(0.0, 1.0, num_celulas)
 
         direc_x = np.cos(angulos)
         direc_y = np.sin(angulos)
 
-        dx = (
+        # Desplazamientos
+        dx_step = (
             u0 * dt * fuerza_x
             + sigma_pos * np.sqrt(dt) * gauss_x
-            + V0 * direc_x * dt
+            + (V0 * direc_x * dt if "propulsion" in ecuaciones else 0.0)
         )
-        dy = (
+        dy_step = (
             u0 * dt * fuerza_y
             + sigma_pos * np.sqrt(dt) * gauss_y
-            + V0 * direc_y * dt
+            + (V0 * direc_y * dt if "propulsion" in ecuaciones else 0.0)
         )
 
-        vel_x[:] = dx / dt
-        vel_y[:] = dy / dt
+        # Actualización de variables reales
+        vel_x[:] = dx_step / dt
+        vel_y[:] = dy_step / dt
 
-        posx_real[:] += dx
-        posy_real[:] += dy
+        posx_real[:] += dx_step
+        posy_real[:] += dy_step
 
-        pos_x[:] = (pos_x + dx) % limx
-        pos_y[:] = (pos_y + dy) % limy
+        pos_x[:] = (pos_x + dx_step) % limx
+        pos_y[:] = (pos_y + dy_step) % limy
 
+    # Ciclo de estabilización
     for _ in range(n_estabilizar):
         paso_temporal()
 
@@ -131,6 +118,7 @@ def simulate(
     hist_velx = np.zeros((n_pasos, num_celulas), dtype=float)
     hist_vely = np.zeros((n_pasos, num_celulas), dtype=float)
 
+    # Ciclo de grabación de datos
     for step in range(n_pasos):
         paso_temporal()
         hist_posx_real[step, :] = posx_real

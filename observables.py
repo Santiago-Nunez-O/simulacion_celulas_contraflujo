@@ -57,51 +57,48 @@ def calcular_correlacion_y_pares(
     numerador_y = np.zeros(bins, dtype=float)
     denominador = np.zeros(bins, dtype=float)
 
+    # 1. Ciclo temporal restaurado: evita saturar la memoria
     for t in range(T):
-        vx = hist_velx[t]
-        vy = hist_vely[t]
         px = hist_posx_caja[t]
         py = hist_posy_caja[t]
+        vx = hist_velx[t]
+        vy = hist_vely[t]
 
-        for i in range(N):
-            for j in range(N):
-                if i == j:
-                    continue
+        # 2. Broadcasting bidimensional (N, N) alojado en caché L3
+        dx = px[:, None] - px[None, :]
+        dy = py[:, None] - py[None, :]
+        
+        dx = (dx + limx / 2.0) % limx - limx / 2.0
+        dy = (dy + limy / 2.0) % limy - limy / 2.0
+        
+        dist = np.sqrt(dx * dx + dy * dy)
+        
+        vx_prod = vx[:, None] * vx[None, :]
+        vy_prod = vy[:, None] * vy[None, :]
+        
+        mask = (dist > 0.0) & (dist < rmax)
+        
+        dist_val = dist[mask]
+        vx_val = vx_prod[mask]
+        vy_val = vy_prod[mask]
+        
+        if dist_val.size > 0:
+            idx = (dist_val / dr).astype(int)
+            numerador_x += np.bincount(idx, weights=vx_val, minlength=bins)[:bins]
+            numerador_y += np.bincount(idx, weights=vy_val, minlength=bins)[:bins]
+            denominador += np.bincount(idx, minlength=bins)[:bins]
 
-                dx = px[i] - px[j]
-                dy = py[i] - py[j]
-
-                if dx > limx / 2.0:
-                    dx -= limx
-                elif dx < -limx / 2.0:
-                    dx += limx
-
-                if dy > limy / 2.0:
-                    dy -= limy
-                elif dy < -limy / 2.0:
-                    dy += limy
-
-                distancia = np.sqrt(dx * dx + dy * dy)
-                if distancia < rmax:
-                    b = int(distancia / dr)
-                    if b < bins:
-                        numerador_x[b] += vx[i] * vx[j]
-                        numerador_y[b] += vy[i] * vy[j]
-                        denominador[b] += 1.0
-
+    # 3. Cálculos finales idénticos
     cxx = np.zeros(bins, dtype=float)
     cyy = np.zeros(bins, dtype=float)
-    gr = np.zeros(bins, dtype=float)
+    
+    mask_den = denominador > 0
+    cxx[mask_den] = numerador_x[mask_den] / denominador[mask_den]
+    cyy[mask_den] = numerador_y[mask_den] / denominador[mask_den]
+
     densidad = N / (limx * limy)
-
-    for b in range(bins):
-        if denominador[b] > 0:
-            cxx[b] = numerador_x[b] / denominador[b]
-            cyy[b] = numerador_y[b] / denominador[b]
-
-        r_actual = radios[b]
-        area = 2.0 * np.pi * r_actual * dr
-        gr[b] = denominador[b] / (T * N * densidad * area)
+    areas = 2.0 * np.pi * radios * dr
+    gr = denominador / (T * N * densidad * areas)
 
     cxx0 = np.sum(hist_velx * hist_velx) / (N * T)
     cyy0 = np.sum(hist_vely * hist_vely) / (N * T)
@@ -110,8 +107,6 @@ def calcular_correlacion_y_pares(
     cyy_norm = cyy / cyy0 if cyy0 > 1e-12 else cyy
 
     return radios, cxx_norm, cyy_norm, gr
-
-
 def calcular_todos_observables(resultado_sim):
     px_real = resultado_sim["posx_real"]
     py_real = resultado_sim["posy_real"]
