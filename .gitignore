@@ -1,1 +1,3 @@
 TID-SBI/
+__pycache__/
+*.py[cod]
