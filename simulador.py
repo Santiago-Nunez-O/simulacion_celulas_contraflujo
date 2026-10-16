@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 
 
@@ -15,30 +17,40 @@ def simulate(
     sigma_pos=0.0,
     distribucion_angulos="contraflujo",
     ecuaciones_activas=None,
+    initial_state=None,
 ):
     V0, u0, w, sigma_angulo = theta
     ecuaciones = {"propulsion", "repulsion", "alignment", "noise"} if ecuaciones_activas is None else set(ecuaciones_activas)
 
     rng = np.random.default_rng(seed)
+    if initial_state is None:
+        pos_x = rng.uniform(0.0, limx, num_celulas)
+        pos_y = rng.uniform(0.0, limy, num_celulas)
 
-    pos_x = rng.uniform(0.0, limx, num_celulas)
-    pos_y = rng.uniform(0.0, limy, num_celulas)
+        if distribucion_angulos == "contraflujo":
+            mitad = num_celulas // 2
+            angulos = np.zeros(num_celulas, dtype=float)
+            angulos[mitad:] = np.pi
+        else:
+            angulos = rng.uniform(0.0, 2.0 * np.pi, num_celulas)
 
-    if distribucion_angulos == "contraflujo":
-        mitad = num_celulas // 2
-        angulos = np.zeros(num_celulas, dtype=float)
-        angulos[mitad:] = np.pi
+        posx_real = np.copy(pos_x)
+        posy_real = np.copy(pos_y)
+        vel_x = np.zeros(num_celulas, dtype=float)
+        vel_y = np.zeros(num_celulas, dtype=float)
     else:
-        angulos = rng.uniform(0.0, 2.0 * np.pi, num_celulas)
-
-    posx_real = np.copy(pos_x)
-    posy_real = np.copy(pos_y)
+        rng.bit_generator.state = deepcopy(initial_state["rng_state"])
+        pos_x = np.copy(initial_state["pos_x"])
+        pos_y = np.copy(initial_state["pos_y"])
+        posx_real = np.copy(initial_state["posx_real"])
+        posy_real = np.copy(initial_state["posy_real"])
+        angulos = np.copy(initial_state["angulos"])
+        vel_x = np.copy(initial_state["vel_x"])
+        vel_y = np.copy(initial_state["vel_y"])
 
     fuerza_x = np.zeros(num_celulas, dtype=float)
     fuerza_y = np.zeros(num_celulas, dtype=float)
     alineacion = np.zeros(num_celulas, dtype=float)
-    vel_x = np.zeros(num_celulas, dtype=float)
-    vel_y = np.zeros(num_celulas, dtype=float)
 
     def paso_temporal():
         nonlocal pos_x, pos_y, posx_real, posy_real, angulos, vel_x, vel_y
@@ -107,9 +119,9 @@ def simulate(
         pos_x[:] = (pos_x + dx_step) % limx
         pos_y[:] = (pos_y + dy_step) % limy
 
-    # Ciclo de estabilización
-    for _ in range(n_estabilizar):
-        paso_temporal()
+    if initial_state is None:
+        for _ in range(n_estabilizar):
+            paso_temporal()
 
     hist_posx_real = np.zeros((n_pasos, num_celulas), dtype=float)
     hist_posy_real = np.zeros((n_pasos, num_celulas), dtype=float)
@@ -144,4 +156,14 @@ def simulate(
         "radio": radio,
         "num_celulas": num_celulas,
         "n_pasos": n_pasos,
+        "final_state": {
+            "pos_x": np.copy(pos_x),
+            "pos_y": np.copy(pos_y),
+            "posx_real": np.copy(posx_real),
+            "posy_real": np.copy(posy_real),
+            "angulos": np.copy(angulos),
+            "vel_x": np.copy(vel_x),
+            "vel_y": np.copy(vel_y),
+            "rng_state": deepcopy(rng.bit_generator.state),
+        },
     }

@@ -64,6 +64,33 @@
     .simulator { grid-column: 2; grid-row: 1; animation-delay: .16s; }
     .parameters { grid-column: 1; grid-row: 2; animation-delay: .24s; }
     .optimizer { grid-column: 2; grid-row: 2; animation-delay: .32s; }
+    body:not(.optimizing) .optimizer { display: none; }
+    body:not(.optimizing) .parameters { grid-column: 1 / -1; }
+    .drawer-toggle { margin-left: 12px; }
+    .drawer-backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(3, 8, 14, .58); opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease; }
+    .control-drawer { position: fixed; z-index: 21; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); padding: 22px; overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); box-shadow: -16px 0 42px rgba(0, 0, 0, .35); transform: translateX(102%); transition: transform .24s ease; }
+    body.drawer-open .drawer-backdrop { opacity: 1; visibility: visible; }
+    body.drawer-open .control-drawer { transform: translateX(0); }
+    .drawer-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .drawer-close { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); font-size: 19px; cursor: pointer; }
+    .drawer-section { padding: 16px 0; border-top: 1px solid var(--line); }
+    .drawer-section p { margin-top: 9px; color: var(--muted); font: 12px/1.55 var(--mono); }
+    .drawer-section label { display: block; color: var(--ink); font: 13px var(--mono); }
+    .drawer-section output { float: right; color: var(--accent); }
+    .drawer-range-labels { display: flex; justify-content: space-between; color: var(--muted); font: 10px var(--mono); }
+    .optimizer-action { width: 100%; margin-top: 15px; padding: 11px; border: 1px solid var(--positive); border-radius: 4px; background: color-mix(in srgb, var(--positive) 14%, var(--surface)); color: var(--positive); font: 700 13px var(--mono); cursor: pointer; }
+    .optimizer-action:hover:not(:disabled) { background: color-mix(in srgb, var(--positive) 26%, var(--surface)); }
+    .optimizer-action:disabled { opacity: .55; cursor: wait; }
+    .optimizer-message { min-height: 38px; margin-top: 12px; color: var(--muted); font: 11px/1.5 var(--mono); }
+    .optimizer-result { color: var(--ink) !important; white-space: pre-line; }
+    .optimizer-parameter-grid { display: grid; grid-template-columns: minmax(76px, 1fr) repeat(2, minmax(64px, .85fr)) 34px; align-items: center; gap: 7px; margin-top: 14px; }
+    .optimizer-parameter-grid > span { color: var(--muted); font: 10px var(--mono); }
+    .optimizer-parameter-grid label { color: var(--ink); font: 12px var(--mono); }
+    .optimizer-parameter-grid input[type="number"] { width: 100%; min-width: 0; padding: 6px 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface-deep); color: var(--ink); font: 12px var(--mono); text-align: right; }
+    .optimizer-parameter-grid input[type="checkbox"] { justify-self: center; accent-color: var(--positive); }
+    .optimizer-config-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .optimizer-config-actions button { padding: 5px 7px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--muted); font: 10px var(--mono); cursor: pointer; }
+    .optimizer-config-actions button:hover { border-color: var(--accent); color: var(--accent); }
     .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
     .theme-toggle { padding: 6px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); font: 10px var(--mono); cursor: pointer; }
     .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
@@ -75,6 +102,8 @@
     .status { display: inline-flex; align-items: center; gap: 7px; color: var(--positive); font: 11px var(--mono); text-transform: uppercase; }
     .status::before { width: 7px; height: 7px; content: ""; border-radius: 50%; background: currentColor; box-shadow: 0 0 9px currentColor; animation: pulse 1.5s infinite; }
     .sim-head { position: relative; z-index: 2; display: flex; align-items: end; justify-content: space-between; }
+    .sim-head > div:first-child { min-width: 0; }
+    .sim-head .panel-id { white-space: nowrap; }
     .canvas-wrap { position: absolute; inset: 58px 16px 16px; border: 1px solid var(--line); background: var(--surface-deep); }
     #fluidCanvas { width: 100%; height: 100%; display: block; }
     .canvas-readout { position: absolute; top: 12px; left: 12px; color: var(--muted); font: 11px var(--mono); line-height: 1.7; }
@@ -112,6 +141,9 @@
     .slider-label { display: flex; justify-content: space-between; gap: 8px; color: var(--ink); font: 14px var(--mono); line-height: 1.2; }
     .slider-label span { min-width: 0; }
     .slider-label output { flex: 0 0 auto; color: var(--accent-strong); font-weight: 700; }
+    .parameter-value { padding: 0; border: 0; background: transparent; color: var(--accent-strong); font: 700 14px var(--mono); cursor: text; }
+    .parameter-value:hover, .parameter-value:focus-visible { color: var(--positive); outline: 1px solid var(--accent); outline-offset: 3px; }
+    .value-editor { width: 76px; padding: 2px 4px; border: 1px solid var(--accent); border-radius: 3px; background: var(--surface-deep); color: var(--ink); font: 700 13px var(--mono); text-align: right; }
     input[type="range"] { width: 100%; height: 19px; margin: 5px 0 0; accent-color: var(--accent); cursor: pointer; }
     .equation { display: grid; place-items: center; height: 84px; margin-top: 10px; padding: 10px; border: 1px solid rgba(100, 255, 218, .2); background: rgba(0, 10, 25, .5); color: var(--mint); font: 16px var(--mono); text-align: center; }
     .equation small { display: block; margin-top: 7px; color: var(--muted); font: 10px var(--mono); }
@@ -124,6 +156,7 @@
     .equation-result { min-height: 54px; margin-top: 8px; color: var(--ink); font: 11px/1.55 var(--mono); }
     .equation-result strong { display: block; color: var(--mint); font-size: 17px; }
     .equation-result.error strong { color: #ff8a5b; font-size: 11px; }
+    .equation-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .equation-examples { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
     .equation-example { padding: 3px 6px; border: 1px solid rgba(255, 138, 91, .25); background: transparent; color: var(--muted); font: 10px var(--mono); cursor: pointer; }
     .equation-example:hover { color: var(--cyan); border-color: var(--cyan); }
@@ -136,10 +169,10 @@
     .camera-panel { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
     .camera-preview { display: none; width: 100%; max-height: 110px; margin-top: 7px; object-fit: cover; border: 1px solid var(--line); }
     .camera-status { color: var(--muted); font: 10px var(--mono); }
-    .time-controls { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: 16px; display: grid; grid-template-columns: auto minmax(80px, 1fr) auto repeat(7, auto); align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 94%, transparent); }
-    .time-controls label, .time-readout { color: var(--muted); font: 10px var(--mono); }
+    .time-controls { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: 16px; display: grid; grid-template-columns: auto minmax(60px, 1fr) minmax(76px, auto) repeat(8, minmax(36px, auto)); align-items: center; gap: 6px; padding: 8px 10px; overflow-x: auto; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 94%, transparent); }
+    .time-controls label, .time-readout { color: var(--muted); font: 10px var(--mono); white-space: nowrap; }
     .time-controls input[type="range"] { margin: 0; }
-    .time-button { padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); font: 10px var(--mono); cursor: pointer; }
+    .time-button { min-width: 36px; padding: 5px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); font: 10px var(--mono); white-space: nowrap; cursor: pointer; }
     .time-button:hover, .time-button.active { border-color: var(--accent); color: var(--accent); }
     .log-window { height: calc(100% - 38px); padding: 9px 12px; overflow: hidden; border: 1px solid rgba(0, 229, 255, .18); background: rgba(0, 5, 15, .45); font: 11px/1.7 var(--mono); }
     .log-line { white-space: nowrap; color: var(--muted); animation: log-in .2s both; }
@@ -149,9 +182,9 @@
     @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes pulse { 50% { opacity: .35; } }
     @keyframes log-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 900px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: 390px 500px 390px 290px; } .telemetry, .simulator, .parameters, .optimizer { grid-column: 1; } .telemetry { grid-row: 1; } .simulator { grid-row: 2; } .parameters { grid-row: 3; } .optimizer { grid-row: 4; } }
+    @media (max-width: 900px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: 390px 500px 390px 290px; } .telemetry, .simulator, .parameters, .optimizer { grid-column: 1; } .telemetry { grid-row: 1; } .simulator { grid-row: 2; } .parameters { grid-row: 3; } .optimizer { grid-row: 4; } body:not(.optimizing) .app { grid-template-rows: 390px 500px 390px; } .canvas-wrap { inset: 82px 16px 16px; } .time-controls { grid-template-columns: auto minmax(60px, 1fr) minmax(76px, auto) repeat(8, minmax(32px, auto)); } }
     @media (max-width: 680px) { .control-math { grid-template-columns: 1fr; height: auto; } .control-math > section + section { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0 0; } .parameter-section { min-height: 390px; } }
-    @media (max-width: 560px) { .app { padding: 10px; gap: 10px; } .panel { padding: 12px; } .canvas-wrap { inset: 54px 12px 12px; } .control-math { gap: 9px; } .control-math > section + section { padding-left: 9px; } .time-controls { grid-template-columns: auto 1fr auto auto auto; } .time-controls .optional-time-button { display: none; } }
+    @media (max-width: 560px) { .app { padding: 10px; gap: 10px; } .panel { padding: 12px; } .canvas-wrap { inset: 82px 12px 12px; } .control-math { gap: 9px; } .control-math > section + section { padding-left: 9px; } .time-controls { display: flex; flex-wrap: wrap; } .time-controls input[type="range"] { flex: 1 1 100px; width: auto; min-width: 65px; } #startTimeButton, #backTenButton, #forwardTenButton, #resetButton { display: none; } }
   </style>
 </head>
 <body>
@@ -165,7 +198,7 @@
         <polyline id="msdLine" class="chart-line msd" points="56,136" />
         <polyline id="autoLine" class="chart-line auto" points="56,136" />
         <g id="chartBars"></g><path id="chartReference" class="chart-tick" d="" stroke-dasharray="4 4" />
-        <text x="8" y="32" class="chart-label" id="chartUnit">valor</text><text x="250" y="149" class="chart-label">tiempo (frames)</text>
+        <text x="8" y="32" class="chart-label" id="chartUnit">valor</text><text x="250" y="149" class="chart-label">tiempo (s)</text>
         <text x="42" y="140" class="chart-axis">0</text><text x="42" y="104" class="chart-axis">1</text><text x="42" y="68" class="chart-axis">2</text><text x="42" y="32" class="chart-axis">3</text>
       </svg>
       <div class="chart-tools" aria-label="Observable selector"><button class="chart-tool active" type="button" data-observable="msd">MSD</button><button class="chart-tool" type="button" data-observable="velocityDistribution">VELOCIDADES</button><button class="chart-tool" type="button" data-observable="temporalCorrelation">AUTOCORRELACIÓN</button><button class="chart-tool" type="button" data-observable="spatialCorrelation">CORRELACIÓN ESPACIAL</button><button class="chart-tool" type="button" data-observable="pairDistribution">g(r)</button></div>
@@ -174,22 +207,22 @@
     </section>
 
     <section class="panel simulator" aria-labelledby="simulator-title">
-      <div class="sim-head"><div><div class="eyebrow">02 / MOVIMIENTO</div><h1 id="simulator-title">SIMULACIÓN CÉLULAS A CONTRAFLUJO // <span id="stepCounter">000000</span></h1></div><div class="panel-id" id="canvasReadout">CANVAS / 100 × 100</div></div>
-      <div class="canvas-wrap"><canvas id="fluidCanvas"></canvas><div class="canvas-readout">NODES <strong id="particleCount">--</strong><br>FRAME <strong id="frameRate">20.0 HZ</strong><br>STATE <strong>CONTRA-FLOW</strong></div></div>
-      <div class="time-controls"><label for="timeSlider">TIEMPO</label><input id="timeSlider" type="range" min="0" max="0" value="0" step="1" /><span class="time-readout" id="timeReadout">t = 0</span><button class="time-button" id="startTimeButton" type="button" title="Ir al primer estado">|&lt;</button><button class="time-button" id="backOneButton" type="button" title="Retroceder un estado">−1</button><button class="time-button" id="backTenButton" type="button" title="Retroceder diez estados">−10</button><button class="time-button" id="forwardOneButton" type="button" title="Avanzar un estado">+1</button><button class="time-button" id="forwardTenButton" type="button" title="Avanzar diez estados">+10</button><button class="time-button active optional-time-button" id="liveButton" type="button">LIVE</button><button class="time-button optional-time-button" id="resetButton" type="button">REINICIAR</button></div>
+      <div class="sim-head"><div><div class="eyebrow">02 / MOVIMIENTO</div><h1 id="simulator-title">SIMULACIÓN CÉLULAS A CONTRAFLUJO</h1></div><div><span class="panel-id" id="canvasReadout">CANVAS / 100 × 100</span><button class="theme-toggle drawer-toggle" id="openOptimizer" type="button" aria-expanded="false">AJUSTES</button></div></div>
+      <div class="canvas-wrap"><canvas id="fluidCanvas"></canvas><div class="canvas-readout">NODES <strong id="particleCount">--</strong><br>TIME <strong id="elapsedTime">0.00 s</strong><br>STATE <strong>CONTRA-FLOW</strong></div></div>
+      <div class="time-controls"><label for="timeSlider">TIEMPO</label><input id="timeSlider" type="range" min="0" max="0" value="0" step="0.05" /><span class="time-readout" id="timeReadout">t = 0.00 s</span><button class="time-button" id="startTimeButton" type="button" title="Ir al primer segundo">|&lt;</button><button class="time-button" id="backOneButton" type="button" title="Retroceder un estado">−1</button><button class="time-button" id="backTenButton" type="button" title="Retroceder diez estados">−10</button><button class="time-button" id="forwardOneButton" type="button" title="Avanzar un estado">+1</button><button class="time-button" id="forwardTenButton" type="button" title="Avanzar diez estados">+10</button><button class="time-button optional-time-button" id="pauseButton" type="button">PAUSAR</button><button class="time-button active optional-time-button" id="liveButton" type="button">EN VIVO</button><button class="time-button optional-time-button" id="resetButton" type="button" title="Reiniciar simulación">RESET</button></div>
     </section>
 
     <section class="panel parameters" aria-labelledby="parameters-title">
       <div class="panel-heading"><div><div class="eyebrow">03 / MODEL CONTROL</div><h2 id="parameters-title">Parameters & equations</h2></div><span class="panel-id">θ VECTOR</span></div>
       <div class="control-math"><section class="parameter-section"><div class="subhead">INPUT VECTOR / θ</div>
         <div class="parameter-navigator"><span>PARAMETROS</span><input id="parameterSlider" type="range" min="0" max="5" step="1" value="0" aria-label="Recorrer parámetros ajustables" /><span id="parameterPosition">1 / 6</span></div>
-        <div class="slider-row" data-parameter="v0"><div class="slider-label"><span>V₀ / propulsion</span><output id="v0Value">1.80</output></div><input data-key="v0" id="v0" type="range" min="0" max="5" step=".01" value="1.8" /></div>
-        <div class="slider-row" data-parameter="u0"><div class="slider-label"><span>u₀ / repulsion</span><output id="u0Value">0.90</output></div><input data-key="u0" id="u0" type="range" min="0" max="5" step=".01" value=".9" /></div>
-        <div class="slider-row" data-parameter="sigma"><div class="slider-label"><span>σ / angular noise</span><output id="sigmaValue">0.35</output></div><input data-key="sigma" id="sigma" type="range" min="0" max="5" step=".01" value=".35" /></div>
-        <div class="slider-row" data-parameter="alignment"><div class="slider-label"><span>w / alignment</span><output id="alignmentValue">1.25</output></div><input data-key="alignment" id="alignment" type="range" min="0" max="5" step=".01" value="1.25" /></div>
-        <div class="slider-row" data-parameter="nodes"><div class="slider-label"><span>N / nodes</span><output id="nodesValue">84</output></div><input data-key="nodes" id="nodes" type="range" min="8" max="300" step="1" value="84" /></div>
-        <div class="slider-row" data-parameter="canvasSize"><div class="slider-label"><span>L / canvas size</span><output id="canvasSizeValue">100</output></div><input data-key="canvasSize" id="canvasSize" type="range" min="40" max="300" step="5" value="100" /></div>
-      </section><section><div class="subhead">MOTION EQUATIONS / ACTIVE SET</div>
+        <div class="slider-row" data-parameter="v0"><div class="slider-label"><span>V₀ / propulsion</span><output class="parameter-value" id="v0Value" data-key="v0" tabindex="0" role="button" aria-label="Editar velocidad de propulsión">1.80</output></div><input data-key="v0" id="v0" type="range" min="0" max="5" step=".001" value="1.8" /></div>
+        <div class="slider-row" data-parameter="u0"><div class="slider-label"><span>u₀ / repulsion</span><output class="parameter-value" id="u0Value" data-key="u0" tabindex="0" role="button" aria-label="Editar repulsión">0.90</output></div><input data-key="u0" id="u0" type="range" min="0" max="5" step=".001" value=".9" /></div>
+        <div class="slider-row" data-parameter="sigma"><div class="slider-label"><span>σ / angular noise</span><output class="parameter-value" id="sigmaValue" data-key="sigma" tabindex="0" role="button" aria-label="Editar ruido angular">0.35</output></div><input data-key="sigma" id="sigma" type="range" min="0" max="5" step=".001" value=".35" /></div>
+        <div class="slider-row" data-parameter="alignment"><div class="slider-label"><span>w / alignment</span><output class="parameter-value" id="alignmentValue" data-key="alignment" tabindex="0" role="button" aria-label="Editar alineación">1.25</output></div><input data-key="alignment" id="alignment" type="range" min="0" max="5" step=".001" value="1.25" /></div>
+        <div class="slider-row" data-parameter="nodes"><div class="slider-label"><span>N / nodes</span><output class="parameter-value" id="nodesValue" data-key="nodes" tabindex="0" role="button" aria-label="Editar número de células">84</output></div><input data-key="nodes" id="nodes" type="range" min="8" max="300" step="1" value="84" /></div>
+        <div class="slider-row" data-parameter="canvasSize"><div class="slider-label"><span>L / canvas size</span><output class="parameter-value" id="canvasSizeValue" data-key="canvasSize" tabindex="0" role="button" aria-label="Editar tamaño del dominio">100</output></div><input data-key="canvasSize" id="canvasSize" type="range" min="40" max="300" step="5" value="100" /></div>
+      </section><section><div class="equation-heading"><div class="subhead">MOTION EQUATIONS / ACTIVE SET</div><button id="resetEquations" class="equation-action" type="button">REINICIAR BASE</button></div>
         <div class="equation-lab">
           <div class="equation-input"><input id="equationName" type="text" value="Nueva ecuación" aria-label="Equation name" /><select id="equationKind" aria-label="Equation role"><option value="propulsion">propulsión</option><option value="repulsion">repulsión</option><option value="alignment">alineación</option><option value="noise">ruido</option></select></div>
           <div class="equation-input"><input id="equationExpression" type="text" value="dr/dt = V₀ (cos θ, sin θ)" aria-label="Motion equation" /><button id="addEquation" class="equation-action" type="button">ADD</button></div>
@@ -200,8 +233,35 @@
       </section></div>
     </section>
 
-    <section class="panel optimizer" aria-labelledby="optimizer-title"><div class="panel-heading"><div><div class="eyebrow">04 / PARAMETER ENGINE</div><h2 id="optimizer-title">Optimization trace</h2></div><span class="status">optimizer running</span></div><div class="log-window" id="logWindow" aria-live="polite"></div></section>
+    <section class="panel optimizer" aria-labelledby="optimizer-title"><div class="panel-heading"><div><div class="eyebrow">04 / PARAMETER ENGINE</div><h2 id="optimizer-title">Optimization trace</h2></div><span class="status" id="optimizerStatus">optimizer idle</span></div><div class="log-window" id="logWindow" aria-live="polite"></div></section>
   </main>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="control-drawer" id="controlDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+    <div class="drawer-heading"><div><div class="eyebrow">04 / PANEL LATERAL</div><h2 id="drawerTitle">Optimización y ajustes</h2></div><button class="drawer-close" id="closeOptimizer" type="button" aria-label="Cerrar panel">×</button></div>
+    <section class="drawer-section" aria-labelledby="sensitivityTitle">
+      <div class="subhead" id="sensitivityTitle">CONTROL DE SLIDERS</div>
+      <label for="sliderSensitivity">Sensibilidad <output id="sensitivityValue">5 / 9</output></label>
+      <input id="sliderSensitivity" type="range" min="1" max="9" step="1" value="5" />
+      <div class="drawer-range-labels"><span>CAMBIO FINO</span><span>CAMBIO AMPLIO</span></div>
+      <p>Cambio aproximado por movimiento: <strong id="sensitivityStep">0.010</strong>. El valor también se puede escribir pulsando su número.</p>
+    </section>
+    <section class="drawer-section" aria-labelledby="optimizationTitle">
+      <div class="subhead" id="optimizationTitle">OPTIMIZAR PARÁMETROS</div>
+      <p>Define el punto inicial, la referencia y qué parámetros se ajustan. La referencia del notebook y los cuatro parámetros activos vienen preseleccionados.</p>
+      <div class="optimizer-parameter-grid" id="optimizerParameterGrid">
+        <span></span><span>OBJETIVO</span><span>INICIO</span><span>BUSCAR</span>
+        <label for="targetV0">V₀</label><input id="targetV0" data-optimizer-target="v0" type="number" min="0" max="5" step=".001" value="1" /><input id="initialV0" data-optimizer-initial="v0" type="number" min=".01" max="5" step=".001" value="1.8" /><input data-optimizer-search="v0" type="checkbox" checked aria-label="Optimizar V₀" />
+        <label for="targetU0">u₀</label><input id="targetU0" data-optimizer-target="u0" type="number" min="0" max="5" step=".001" value="1" /><input id="initialU0" data-optimizer-initial="u0" type="number" min=".01" max="5" step=".001" value=".9" /><input data-optimizer-search="u0" type="checkbox" checked aria-label="Optimizar u₀" />
+        <label for="targetSigma">σ</label><input id="targetSigma" data-optimizer-target="sigma" type="number" min="0" max="5" step=".001" value="1" /><input id="initialSigma" data-optimizer-initial="sigma" type="number" min=".01" max="5" step=".001" value=".35" /><input data-optimizer-search="sigma" type="checkbox" checked aria-label="Optimizar σ" />
+        <label for="targetAlignment">w</label><input id="targetAlignment" data-optimizer-target="alignment" type="number" min="0" max="5" step=".001" value="1" /><input id="initialAlignment" data-optimizer-initial="alignment" type="number" min=".01" max="5" step=".001" value="1.25" /><input data-optimizer-search="alignment" type="checkbox" checked aria-label="Optimizar w" />
+      </div>
+      <div class="optimizer-config-actions"><button id="resetOptimizerTarget" type="button">RESTAURAR OBJETIVO DEL NOTEBOOK</button><button id="useCurrentParameters" type="button">USAR VALORES ACTUALES COMO INICIO</button></div>
+      <p>Se usa una búsqueda por coordenadas reproducible, limitada al rango 0.01–5. El cálculo de optimización usa hasta 40 células y 50 pasos para responder rápido.</p>
+      <button id="runOptimization" class="optimizer-action" type="button">OPTIMIZAR</button>
+      <div id="optimizerMessage" class="optimizer-message" aria-live="polite">Listo para optimizar.</div>
+      <p id="optimizerResult" class="optimizer-result"></p>
+    </section>
+  </aside>
   <script>
     const root = document.documentElement;
     const savedTheme = localStorage.getItem("simulacion-theme") || "dark";
@@ -220,6 +280,7 @@
     const history = { msd: [], autocorrelation: [], meanSpeed: [], density: [] };
     let currentObservables = { msd: [], velocityDistribution: [], temporalCorrelation: [], spatialCorrelation: [], pairDistribution: [] };
     const frames = [];
+    const MAX_BUFFERED_FRAMES = 6000;
     const params = { v0: 1.8, u0: .9, sigma: .35, alignment: 1.25, nodes: 84, canvasSize: 100 };
     let simulationSize = 100;
     let selectedObservable = "msd";
@@ -316,7 +377,7 @@
       const now = new Date().toISOString().slice(11, 19);
       const line = document.createElement("div");
       line.className = "log-line";
-      line.innerHTML = `<span class="time">[${now}]</span> <span class="accent">OPTIMIZER</span> iter=${String(optimizer.iteration).padStart(4, "0")} tol=<span class="value">${optimizer.tolerance.toFixed(4)}</span> err=<span class="value">${optimizer.minimumError.toFixed(5)}</span> msd=${metrics.msd.toFixed(2)}`;
+      line.textContent = `[${now}] OPTIMIZER iter=${String(optimizer.iteration || 0).padStart(3, "0")} err=${Number(optimizer.error || 0).toPrecision(4)} msd=${metrics.msd.toFixed(2)}`;
       logWindow.append(line);
       while (logWindow.children.length > 9) logWindow.firstElementChild.remove();
       logWindow.scrollTop = logWindow.scrollHeight;
@@ -326,81 +387,244 @@
       if (!payload) return;
       simulationSize = payload.simulation?.canvasSize || simulationSize;
       drawParticles(payload.particles);
-      document.getElementById("stepCounter").textContent = String(payload.step).padStart(6, "0");
+      const elapsedSeconds = Number(payload.timeSeconds ?? payload.step * (payload.simulation?.dt || .05));
+      const formattedTime = `${elapsedSeconds.toFixed(2)} s`;
+      document.getElementById("elapsedTime").textContent = formattedTime;
       document.getElementById("particleCount").textContent = payload.particles.length;
       document.getElementById("canvasReadout").textContent = `CANVAS / ${simulationSize} × ${simulationSize}`;
       document.getElementById("meanSpeed").textContent = payload.metrics.meanSpeed.toFixed(2);
       document.getElementById("density").textContent = payload.metrics.density.toFixed(4);
-      document.getElementById("timeReadout").textContent = `t = ${payload.step}`;
+      document.getElementById("timeReadout").textContent = `t = ${formattedTime}`;
       currentObservables = payload.observables || currentObservables;
+    }
+
+    function setPlaybackMode(paused) {
+      playbackMode = paused;
+      document.getElementById("liveButton").classList.toggle("active", !paused);
+      const pauseButton = document.getElementById("pauseButton");
+      pauseButton.classList.toggle("active", paused);
+      pauseButton.textContent = paused ? "PAUSADO" : "PAUSAR";
+    }
+
+    function formatParameterValue(key, value) {
+      if (["nodes", "canvasSize"].includes(key)) return String(value);
+      const formatted = Number(value).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+      if (!formatted.includes(".")) return `${formatted}.00`;
+      return formatted.split(".")[1].length < 2 ? `${formatted}0` : formatted;
+    }
+
+    function renderOptimizerStatus(optimizer = {}) {
+      const isRunning = optimizer.status === "OPTIMIZING";
+      document.body.classList.toggle("optimizing", isRunning);
+      document.getElementById("optimizerStatus").textContent = isRunning ? "optimizer running" : "optimizer idle";
+      document.getElementById("runOptimization").disabled = isRunning;
+      document.getElementById("runOptimization").textContent = isRunning ? "OPTIMIZANDO..." : "OPTIMIZAR";
+      document.getElementById("optimizerMessage").textContent = optimizer.message || "Listo para optimizar.";
+      const result = document.getElementById("optimizerResult");
+      result.textContent = optimizer.params
+        ? `V₀ ${formatParameterValue("v0", optimizer.params.v0)} · u₀ ${formatParameterValue("u0", optimizer.params.u0)} · σ ${formatParameterValue("sigma", optimizer.params.sigma)} · w ${formatParameterValue("alignment", optimizer.params.alignment)}${Number.isFinite(optimizer.error) ? `\nError: ${optimizer.error.toPrecision(5)}` : ""}`
+        : "";
+      if (optimizer.status === "COMPLETE" && optimizer.params) {
+        Object.entries(optimizer.params).forEach(([key, value]) => {
+          params[key] = value;
+          const input = document.getElementById(key);
+          input.value = String(value);
+          document.getElementById(`${key}Value`).textContent = formatParameterValue(key, value);
+        });
+      }
     }
 
     function receiveTelemetry(payload) {
       if (payload.step === 0) {
         frames.length = 0;
         currentFrameIndex = 0;
+        setPlaybackMode(false);
         Object.keys(history).forEach((key) => { history[key].length = 0; });
       }
-      frames.push(payload);
-      if (frames.length > 240) {
+      if (payload.observables) currentObservables = payload.observables;
+      const storedPayload = { ...payload };
+      delete storedPayload.observables;
+      frames.push(storedPayload);
+      if (frames.length > MAX_BUFFERED_FRAMES) {
         frames.shift();
         if (playbackMode) currentFrameIndex = Math.max(0, currentFrameIndex - 1);
       }
       Object.keys(history).forEach((key) => history[key].push(payload.metrics[key]));
       if (history.msd.length > 70) Object.keys(history).forEach((key) => history[key].shift());
       const timeSlider = document.getElementById("timeSlider");
-      timeSlider.max = Math.max(0, frames.length - 1);
+      const frameStep = payload.simulation?.dt || .05;
+      timeSlider.min = frames[0].timeSeconds ?? frames[0].step * frameStep;
+      timeSlider.max = frames[frames.length - 1].timeSeconds ?? frames[frames.length - 1].step * frameStep;
+      timeSlider.step = frameStep;
       if (!playbackMode) {
         currentFrameIndex = Math.max(0, frames.length - 1);
-        timeSlider.value = currentFrameIndex;
+        timeSlider.value = timeSlider.max;
         renderFrame(payload);
+      } else {
+        const selectedFrame = frames[currentFrameIndex];
+        timeSlider.value = selectedFrame?.timeSeconds ?? selectedFrame?.step * frameStep ?? timeSlider.min;
       }
-      updateChart();
-      if (!lastTimestamp || payload.timestamp - lastTimestamp > 450) addLog(payload.optimizer, payload.metrics);
+      if (payload.observables) updateChart();
+      const optimizerIsRunning = payload.optimizer?.status === "OPTIMIZING";
+      renderOptimizerStatus(payload.optimizer);
+      if (optimizerIsRunning && (!lastTimestamp || payload.timestamp - lastTimestamp > 450)) addLog(payload.optimizer, payload.metrics);
       lastTimestamp = payload.timestamp;
       lastReceivedAt = Date.now();
     }
 
     document.getElementById("timeSlider").addEventListener("input", (event) => {
-      playbackMode = true;
-      document.getElementById("liveButton").classList.remove("active");
-      currentFrameIndex = Number(event.target.value);
+      setPlaybackMode(true);
+      const targetTime = Number(event.target.value);
+      currentFrameIndex = frames.reduce((nearestIndex, frame, index) => {
+        const nearestTime = Number(frames[nearestIndex]?.timeSeconds ?? frames[nearestIndex]?.step * .05);
+        const currentTime = Number(frame.timeSeconds ?? frame.step * .05);
+        return Math.abs(currentTime - targetTime) < Math.abs(nearestTime - targetTime) ? index : nearestIndex;
+      }, 0);
       renderFrame(frames[currentFrameIndex] || frames[frames.length - 1]);
     });
     function moveTime(offset) {
       const timeSlider = document.getElementById("timeSlider");
       const nextIndex = Math.max(0, Math.min(frames.length - 1, currentFrameIndex + offset));
-      playbackMode = true;
-      document.getElementById("liveButton").classList.remove("active");
+      setPlaybackMode(true);
       currentFrameIndex = nextIndex;
-      timeSlider.value = nextIndex;
+      timeSlider.value = frames[nextIndex]?.timeSeconds ?? frames[nextIndex]?.step * .05 ?? timeSlider.min;
       renderFrame(frames[nextIndex] || frames[frames.length - 1]);
     }
 
     document.getElementById("startTimeButton").addEventListener("click", () => {
       const timeSlider = document.getElementById("timeSlider");
-      timeSlider.value = 0;
-      playbackMode = true;
+      setPlaybackMode(true);
       currentFrameIndex = 0;
-      document.getElementById("liveButton").classList.remove("active");
+      timeSlider.value = frames[0]?.timeSeconds ?? frames[0]?.step * .05 ?? 0;
       renderFrame(frames[0] || frames[frames.length - 1]);
     });
     document.getElementById("backOneButton").addEventListener("click", () => moveTime(-1));
     document.getElementById("backTenButton").addEventListener("click", () => moveTime(-10));
     document.getElementById("forwardOneButton").addEventListener("click", () => moveTime(1));
     document.getElementById("forwardTenButton").addEventListener("click", () => moveTime(10));
+    document.getElementById("pauseButton").addEventListener("click", () => setPlaybackMode(true));
     document.getElementById("liveButton").addEventListener("click", () => {
-      playbackMode = false;
-      document.getElementById("liveButton").classList.add("active");
+      setPlaybackMode(false);
       const timeSlider = document.getElementById("timeSlider");
       currentFrameIndex = Math.max(0, frames.length - 1);
-      timeSlider.value = currentFrameIndex;
+      timeSlider.value = frames[currentFrameIndex]?.timeSeconds ?? frames[currentFrameIndex]?.step * .05 ?? timeSlider.min;
       renderFrame(frames[frames.length - 1]);
     });
     document.getElementById("resetButton").addEventListener("click", () => {
-      playbackMode = false;
-      document.getElementById("liveButton").classList.add("active");
+      setPlaybackMode(false);
       postControl({ command: "reset" });
+    });
+
+    const drawer = document.getElementById("controlDrawer");
+    const drawerTrigger = document.getElementById("openOptimizer");
+    function setDrawerOpen(open) {
+      document.body.classList.toggle("drawer-open", open);
+      drawer.setAttribute("aria-hidden", String(!open));
+      drawerTrigger.setAttribute("aria-expanded", String(open));
+      if (open) document.getElementById("closeOptimizer").focus();
+      else drawerTrigger.focus();
+    }
+    drawerTrigger.addEventListener("click", () => setDrawerOpen(true));
+    document.getElementById("closeOptimizer").addEventListener("click", () => setDrawerOpen(false));
+    document.getElementById("drawerBackdrop").addEventListener("click", () => setDrawerOpen(false));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && document.body.classList.contains("drawer-open")) setDrawerOpen(false);
+    });
+
+    const sensitivitySlider = document.getElementById("sliderSensitivity");
+    const sensitivityValue = document.getElementById("sensitivityValue");
+    const sensitivityStep = document.getElementById("sensitivityStep");
+    function sensitivityQuantum(level) {
+      return 10 ** (-3 + (level - 1) / 4);
+    }
+    function updateSensitivity() {
+      const level = Number(sensitivitySlider.value);
+      const quantum = sensitivityQuantum(level);
+      sensitivityValue.textContent = `${level} / 9`;
+      sensitivityStep.textContent = quantum.toFixed(3);
+      document.querySelectorAll('input[type="range"][data-key]').forEach((input) => {
+        if (!["nodes", "canvasSize"].includes(input.dataset.key)) input.dataset.sensitivityStep = String(quantum);
+      });
+      localStorage.setItem("simulacion-slider-sensitivity", String(level));
+    }
+    const savedSensitivity = Number(localStorage.getItem("simulacion-slider-sensitivity"));
+    if (Number.isInteger(savedSensitivity) && savedSensitivity >= 1 && savedSensitivity <= 9) sensitivitySlider.value = String(savedSensitivity);
+    sensitivitySlider.addEventListener("input", updateSensitivity);
+    updateSensitivity();
+
+    const optimizerConfigStorageKey = "simulacion-optimizer-config";
+    const optimizerConfigFields = [
+      ...document.querySelectorAll("[data-optimizer-target], [data-optimizer-initial], [data-optimizer-search]"),
+    ];
+    function readOptimizerConfig(requireSelection = true) {
+      const config = { initial: {}, reference: {}, optimize: [] };
+      for (const key of ["v0", "u0", "sigma", "alignment"]) {
+        const initial = document.querySelector(`[data-optimizer-initial="${key}"]`);
+        const reference = document.querySelector(`[data-optimizer-target="${key}"]`);
+        const search = document.querySelector(`[data-optimizer-search="${key}"]`);
+        if (!initial.reportValidity() || !reference.reportValidity()) return null;
+        config.initial[key] = Number(initial.value);
+        config.reference[key] = Number(reference.value);
+        if (search.checked) config.optimize.push(key);
+      }
+      if (requireSelection && !config.optimize.length) {
+        document.getElementById("optimizerMessage").textContent = "Selecciona al menos un parámetro para buscar.";
+        return null;
+      }
+      return config;
+    }
+    function saveOptimizerConfig() {
+      const config = readOptimizerConfig(false);
+      if (config) localStorage.setItem(optimizerConfigStorageKey, JSON.stringify(config));
+    }
+    const savedOptimizerConfig = localStorage.getItem(optimizerConfigStorageKey);
+    if (savedOptimizerConfig) {
+      try {
+        const saved = JSON.parse(savedOptimizerConfig);
+        for (const key of ["v0", "u0", "sigma", "alignment"]) {
+          const initial = document.querySelector(`[data-optimizer-initial="${key}"]`);
+          const reference = document.querySelector(`[data-optimizer-target="${key}"]`);
+          const search = document.querySelector(`[data-optimizer-search="${key}"]`);
+          if (Number.isFinite(saved.initial?.[key])) initial.value = String(saved.initial[key]);
+          if (Number.isFinite(saved.reference?.[key])) reference.value = String(saved.reference[key]);
+          if (Array.isArray(saved.optimize)) search.checked = saved.optimize.includes(key);
+        }
+      } catch (error) {
+        localStorage.removeItem(optimizerConfigStorageKey);
+      }
+    }
+    optimizerConfigFields.forEach((field) => field.addEventListener("change", saveOptimizerConfig));
+    document.getElementById("useCurrentParameters").addEventListener("click", () => {
+      for (const key of ["v0", "u0", "sigma", "alignment"]) {
+        document.querySelector(`[data-optimizer-initial="${key}"]`).value = String(params[key]);
+      }
+      saveOptimizerConfig();
+    });
+    document.getElementById("resetOptimizerTarget").addEventListener("click", () => {
+      document.querySelectorAll("[data-optimizer-target]").forEach((input) => { input.value = "1"; });
+      saveOptimizerConfig();
+    });
+
+    document.getElementById("runOptimization").addEventListener("click", async () => {
+      const optimizerConfig = readOptimizerConfig();
+      if (!optimizerConfig) return;
+      localStorage.setItem(optimizerConfigStorageKey, JSON.stringify(optimizerConfig));
+      const button = document.getElementById("runOptimization");
+      button.disabled = true;
+      document.getElementById("optimizerMessage").textContent = "Solicitando optimización...";
+      try {
+        const response = await fetch("/api/config", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ command: "optimize", optimizer: optimizerConfig }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+        renderOptimizerStatus({ status: "OPTIMIZING", message: "Optimización iniciada." });
+      } catch (error) {
+        button.disabled = false;
+        document.getElementById("optimizerMessage").textContent = `No se pudo iniciar: ${error.message}`;
+      }
     });
 
     function postControl(payload) {
@@ -412,6 +636,19 @@
     function syncEquations() {
       postControl({ equations });
     }
+
+    document.getElementById("resetEquations").addEventListener("click", () => {
+      const confirmed = window.confirm("Se descartarán las ecuaciones personalizadas y se restaurarán las cuatro ecuaciones base. ¿Continuar?");
+      if (!confirmed) return;
+      equations = [
+        { id: "propulsion", name: "Propulsión propia", kind: "propulsion", expression: "dr/dt = V₀ (cos θ, sin θ)", enabled: true },
+        { id: "repulsion", name: "Repulsión de contacto", kind: "repulsion", expression: "Fᵢⱼ = u₀ (2R - rᵢⱼ) r̂ᵢⱼ", enabled: true },
+        { id: "alignment", name: "Alineación angular", kind: "alignment", expression: "dθ/dt = w Σ sin(θⱼ - θᵢ)", enabled: true },
+        { id: "noise", name: "Ruido angular", kind: "noise", expression: "dθ = σ dWₜ", enabled: true },
+      ];
+      renderEquations();
+      syncEquations();
+    });
 
     function renderEquations() {
       const list = document.getElementById("equationList");
@@ -475,7 +712,11 @@
       if (stream?.readyState === EventSource.OPEN || stream?.readyState === EventSource.CONNECTING) return;
       stream = new EventSource("/events");
       stream.onopen = () => { lastReceivedAt = Date.now(); status.textContent = "stream online"; status.style.color = "var(--mint)"; postControl({ ...params, equations }); };
-      stream.onmessage = (event) => receiveTelemetry(JSON.parse(event.data));
+      stream.onmessage = (event) => {
+        const payload = JSON.parse(event.data);
+        if (payload.type === "optimizer") renderOptimizerStatus(payload.optimizer);
+        else receiveTelemetry(payload);
+      };
       stream.onerror = () => { status.textContent = "reconnecting"; status.style.color = "#ffcf66"; stream.close(); clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, 800); };
     }
 
@@ -487,11 +728,76 @@
       }
     }, 1000);
 
-    document.querySelectorAll("input[type=range][data-key]").forEach((input) => input.addEventListener("input", () => {
-      const value = Number(input.value); const key = input.dataset.key; params[key] = value;
-      document.getElementById(`${key}Value`).textContent = ["nodes", "canvasSize"].includes(key) ? String(value) : value.toFixed(2);
+    function updateParameter(input) {
+      const value = Number(input.value);
+      const key = input.dataset.key;
+      params[key] = value;
+      document.getElementById(`${key}Value`).textContent = formatParameterValue(key, value);
       postControl({ [key]: value });
+    }
+    document.querySelectorAll("input[type=range][data-key]").forEach((input) => input.addEventListener("input", () => {
+      if (!["nodes", "canvasSize"].includes(input.dataset.key)) {
+        const quantum = Number(input.dataset.sensitivityStep || .01);
+        const value = Number(input.value);
+        input.value = String(Number((Math.round(value / quantum) * quantum).toFixed(3)));
+      }
+      updateParameter(input);
     }));
+    document.querySelectorAll("input[type=range][data-key]").forEach((input) => input.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp"].includes(event.key)) return;
+      event.preventDefault();
+      const direction = ["ArrowRight", "ArrowUp"].includes(event.key) ? 1 : -1;
+      const quantum = Number(input.dataset.sensitivityStep || input.step);
+      const nextValue = Math.max(Number(input.min), Math.min(Number(input.max), Number(input.value) + direction * quantum));
+      input.value = String(Number(nextValue.toFixed(3)));
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }));
+    document.querySelectorAll(".parameter-value").forEach((output) => {
+      const startEdit = () => {
+        const range = document.getElementById(output.dataset.key);
+        const editor = document.createElement("input");
+        editor.type = "number";
+        editor.className = "value-editor";
+        editor.min = range.min;
+        editor.max = range.max;
+        editor.step = range.step;
+        editor.value = range.value;
+        editor.setAttribute("aria-label", output.getAttribute("aria-label"));
+        output.replaceWith(editor);
+        editor.focus();
+        editor.select();
+
+        let finished = false;
+        const finishEdit = (commit) => {
+          if (finished) return;
+          finished = true;
+          let value = Number(editor.value);
+          if (!commit || editor.value.trim() === "" || !Number.isFinite(value)) {
+            editor.replaceWith(output);
+            return;
+          }
+          value = Math.max(Number(range.min), Math.min(Number(range.max), value));
+          const step = Number(range.step);
+          const precision = (range.step.split(".")[1] || "").length;
+          value = Number((Number(range.min) + Math.round((value - Number(range.min)) / step) * step).toFixed(precision));
+          range.value = String(value);
+          editor.replaceWith(output);
+          updateParameter(range);
+        };
+        editor.addEventListener("blur", () => finishEdit(true));
+        editor.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") finishEdit(true);
+          if (event.key === "Escape") finishEdit(false);
+        });
+      };
+      output.addEventListener("click", startEdit);
+      output.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          startEdit();
+        }
+      });
+    });
     const parameterRows = [...document.querySelectorAll("[data-parameter]")];
     const parameterSlider = document.getElementById("parameterSlider");
     const parameterPosition = document.getElementById("parameterPosition");

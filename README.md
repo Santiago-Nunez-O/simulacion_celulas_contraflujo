@@ -72,9 +72,34 @@ anterior de Deno ya no es necesario: el servidor Python transmite frames por
 El panel **Motion equations** permite agregar, activar, desactivar o quitar ecuaciones
 del movimiento. Cada ecuacion se asigna a un termino seguro del modelo: `propulsion`,
 `repulsion`, `alignment` o `noise`; los terminos activos se envian por HTTP y
-modifican el campo de movimiento. El boton `CAMERA / SCAN WHITEBOARD` solicita la
-camara, captura la pizarra y usa OCR para dejar el texto detectado en el editor antes
-de incorporarlo con `ADD`.
+modifican el campo de movimiento. Al pulsar un valor numerico de `MODEL CONTROL` se
+puede escribir el valor manualmente; `REINICIAR BASE` restaura las cuatro ecuaciones
+originales despues de confirmar la advertencia. El boton `CAMERA / SCAN WHITEBOARD`
+solicita la camara, captura la pizarra y usa OCR para dejar el texto detectado en el
+editor antes de incorporarlo con `ADD`.
+
+El panel de optimizacion solo se muestra mientras el estado recibido sea
+`OPTIMIZING`. El control de tiempo usa segundos transcurridos, permite pausar la vista,
+buscar estados anteriores y volver a `EN VIVO`; mantiene hasta cinco minutos de
+historial reciente. La simulacion conserva las posiciones y el generador aleatorio
+entre bloques de transmision, por lo que no reinicia el movimiento cada 20 segundos.
+
+El boton `AJUSTES` abre el panel lateral. Su control de sensibilidad cambia el
+incremento aplicado al mover los cuatro sliders fisicos, desde 0.001 (fino) hasta
+0.1 (amplio); los valores tambien pueden editarse directamente. `OPTIMIZAR` ejecuta
+una busqueda por coordenadas acotada que minimiza la diferencia normalizada entre
+MSD, autocorrelacion, correlacion espacial y `g(r)` de la simulacion y la referencia
+del notebook (parametros `V0 = u0 = sigma = w = 1`). En el panel se pueden cambiar
+por parametro el vector objetivo, el punto inicial y cuales variables se buscaran;
+los valores del notebook y los cuatro parametros activos son la configuracion inicial.
+La configuracion se guarda en el navegador. Los parametros no seleccionados quedan
+fijos al valor del punto inicial. Al terminar aplica el vector encontrado; si la
+configuracion de simulacion cambia durante la optimizacion, esta se cancela.
+Para mantener la respuesta interactiva, la busqueda usa hasta 40 celulas y 50 pasos.
+
+Con los cuatro parametros en cero las celulas permanecen quietas. La propulsion sola,
+con ruido, repulsion y alineacion desactivados, produce rapidez constante. Con ruido o
+fuerzas activos la direccion y la rapidez pueden variar intencionalmente.
 
 En el panel de telemetria se pueden seleccionar los cinco resultados estadisticos
 del notebook: `MSD`, distribucion de velocidades, autocorrelacion temporal,
