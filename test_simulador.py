@@ -2,7 +2,7 @@ import time
 import numpy as np
 from simulador import simulate
 from observables import calcular_todos_observables
-from server import coordinate_descent
+from server import coordinate_descent, nelder_mead_simplex, simplex_annealing
 
 
 def test_simulador():
@@ -100,7 +100,44 @@ def test_coordinate_descent_fits_bounded_objective():
     assert abs(fixed_values[0] - target[0]) < 0.01
 
 
+def test_nelder_mead_simplex_fits_bounded_objective():
+    target = np.array([1.5, 2.0, 0.8, 1.2])
+    result, error, iterations = nelder_mead_simplex(
+        [1.0, 1.0, 1.0, 1.0],
+        lambda values: float(np.sum((np.asarray(values) - target) ** 2)),
+        max_iterations=60,
+    )
+    assert error < 0.01
+    np.testing.assert_allclose(result, target, atol=0.08)
+
+    # Sub-indices test
+    result_sub, error_sub, _ = nelder_mead_simplex(
+        [1.0, 1.0, 0.8, 1.2],
+        lambda values: float(np.sum((np.asarray(values) - target) ** 2)),
+        optimized_indices=[0, 1],
+        max_iterations=60,
+    )
+    assert result_sub[2:] == [0.8, 1.2]
+    np.testing.assert_allclose(result_sub[:2], target[:2], atol=0.05)
+
+
+def test_simplex_annealing_fits_bounded_objective():
+    target = np.array([1.5, 2.0, 0.8, 1.2])
+    result, error, iterations = simplex_annealing(
+        [1.0, 1.0, 1.0, 1.0],
+        lambda values: float(np.sum((np.asarray(values) - target) ** 2)),
+        max_iterations=60,
+        initial_temperature=1.0,
+        cooling_rate=0.92,
+    )
+    assert error < 0.05
+    np.testing.assert_allclose(result, target, atol=0.25)
+
+
 if __name__ == "__main__":
     test_simulador()
     test_continuous_simulation_and_edge_parameters()
     test_coordinate_descent_fits_bounded_objective()
+    test_nelder_mead_simplex_fits_bounded_objective()
+    test_simplex_annealing_fits_bounded_objective()
+    print("Todos los tests de optimización y simulación pasaron con éxito.")

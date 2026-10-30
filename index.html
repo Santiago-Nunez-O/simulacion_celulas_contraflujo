@@ -62,11 +62,38 @@
     .panel::after { position: absolute; left: 0; bottom: 0; width: 38%; height: 2px; content: ""; background: linear-gradient(90deg, var(--accent), transparent); }
     .telemetry { grid-column: 1; grid-row: 1; animation-delay: .08s; }
     .simulator { grid-column: 2; grid-row: 1; animation-delay: .16s; }
-    .parameters { grid-column: 1; grid-row: 2; animation-delay: .24s; }
-    .optimizer { grid-column: 2; grid-row: 2; animation-delay: .32s; }
-    body:not(.optimizing) .optimizer { display: none; }
-    body:not(.optimizing) .parameters { grid-column: 1 / -1; }
-    .drawer-toggle { margin-left: 12px; }
+    .parameters { grid-column: 1; grid-row: 2; overflow-x: hidden; overflow-y: auto; animation-delay: .24s; }
+    .optimizer { grid-column: 2; grid-row: 2; animation-delay: .32s; display: flex; flex-direction: column; }
+    body:not(.optimizing):not(.trace-open) .optimizer { display: none; }
+    body:not(.optimizing):not(.trace-open) .parameters { grid-column: 1 / -1; }
+    .optimizer-method-group { margin-top: 14px; }
+    .method-label { display: block; margin-bottom: 6px; color: var(--accent); font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+    .optimizer-select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-deep); color: var(--ink); font: 12px var(--mono); cursor: pointer; }
+    .optimizer-select:focus { outline: none; border-color: var(--accent); }
+    .method-help { margin-top: 6px; padding: 7px 10px; border-left: 2px solid var(--accent); background: var(--surface-deep); color: var(--muted); font: 11px/1.45 var(--mono); }
+    .optimizer-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
+    .optimizer-options-grid label { display: block; color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+    .optimizer-options-grid input { width: 100%; padding: 6px 8px; margin-top: 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface-deep); color: var(--ink); font: 12px var(--mono); }
+    .optimizer-button-row { display: flex; gap: 8px; margin-top: 15px; }
+    .optimizer-cancel-btn { flex: 1; padding: 11px; border: 1px solid #ef5350; border-radius: 4px; background: color-mix(in srgb, #ef5350 16%, var(--surface)); color: #ef5350; font: 700 12px var(--mono); cursor: pointer; }
+    .optimizer-cancel-btn:hover { background: color-mix(in srgb, #ef5350 30%, var(--surface)); }
+    .optimizer-verification-card { margin-top: 14px; padding: 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-deep); }
+    .verification-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .verification-badge { padding: 3px 7px; border-radius: 3px; font: 700 10px var(--mono); background: var(--panel-light); color: var(--muted); text-transform: uppercase; }
+    .verification-badge.running { background: color-mix(in srgb, var(--positive) 20%, transparent); color: var(--positive); animation: pulse 1s infinite; }
+    .verification-badge.done { background: color-mix(in srgb, var(--cyan) 20%, transparent); color: var(--cyan); }
+    .verification-badge.cancel { background: color-mix(in srgb, #ef5350 20%, transparent); color: #ef5350; }
+    .verification-engine { font: 10px var(--mono); color: var(--muted); }
+    .verification-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font: 11px var(--mono); }
+    .verification-stats span { display: block; color: var(--muted); font-size: 9px; }
+    .verification-stats strong { color: var(--ink); }
+    .verification-progress-track { width: 100%; height: 5px; margin-top: 9px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+    .verification-progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--positive)); transition: width .15s ease; }
+    .optimizer-live-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .optimizer-heading-actions { display: flex; align-items: center; gap: 8px; }
+    .optimizer-pill-btn { background: color-mix(in srgb, var(--accent) 15%, var(--surface)); border-color: var(--accent); color: var(--accent); font-weight: 700; margin-left: 8px; }
+    .optimizer-pill-btn:hover { background: color-mix(in srgb, var(--accent) 28%, var(--surface)); }
+    .drawer-toggle { margin-left: 6px; }
     .drawer-backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(3, 8, 14, .58); opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease; }
     .control-drawer { position: fixed; z-index: 21; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); padding: 22px; overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); box-shadow: -16px 0 42px rgba(0, 0, 0, .35); transform: translateX(102%); transition: transform .24s ease; }
     body.drawer-open .drawer-backdrop { opacity: 1; visibility: visible; }
@@ -129,9 +156,10 @@
     .metric { padding: 9px 10px; background: var(--panel-light); border-left: 2px solid var(--cyan); }
     .metric label { display: block; color: var(--muted); font: 12px var(--mono); text-transform: uppercase; }
     .metric strong { display: block; margin-top: 4px; color: var(--ink); font: 22px var(--mono); }
-    .control-math { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(360px, 1.45fr); gap: 18px; height: calc(100% - 38px); }
-    .control-math > section + section { border-left: 1px solid var(--line); padding-left: 15px; }
-    .parameter-section { position: relative; padding-right: 38px; overflow: auto; }
+    .control-math { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(360px, 1.45fr); gap: 18px; height: calc(100% - 38px); min-height: 0; }
+    .control-math > section { min-height: 0; }
+    .control-math > section + section { overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); padding-left: 15px; }
+    .parameter-section { position: relative; padding-right: 38px; overflow-y: auto; overscroll-behavior: contain; }
     .parameter-navigator { position: absolute; top: 22px; right: 0; bottom: 6px; display: flex; flex-direction: column; align-items: center; gap: 7px; }
     .parameter-navigator input { width: 20px; height: 116px; margin: 0; writing-mode: vertical-lr; direction: rtl; accent-color: var(--accent); cursor: pointer; }
     .parameter-navigator span { color: var(--ink); font: 11px var(--mono); writing-mode: vertical-rl; }
@@ -182,7 +210,8 @@
     @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes pulse { 50% { opacity: .35; } }
     @keyframes log-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 900px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: 390px 500px 390px 290px; } .telemetry, .simulator, .parameters, .optimizer { grid-column: 1; } .telemetry { grid-row: 1; } .simulator { grid-row: 2; } .parameters { grid-row: 3; } .optimizer { grid-row: 4; } body:not(.optimizing) .app { grid-template-rows: 390px 500px 390px; } .canvas-wrap { inset: 82px 16px 16px; } .time-controls { grid-template-columns: auto minmax(60px, 1fr) minmax(76px, auto) repeat(8, minmax(32px, auto)); } }
+    @media (max-height: 700px) and (min-width: 901px) { body { overflow-y: auto; } .app { height: auto; min-height: 100vh; grid-template-rows: minmax(370px, 52vh) minmax(370px, 48vh); } }
+    @media (max-width: 900px) { body { overflow: auto; } .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: 390px 500px 390px 290px; } .telemetry, .simulator, .parameters, .optimizer { grid-column: 1; } .telemetry { grid-row: 1; } .simulator { grid-row: 2; } .parameters { grid-row: 3; } .optimizer { grid-row: 4; } body:not(.optimizing):not(.trace-open) .app { grid-template-rows: 390px 500px 390px; } .canvas-wrap { inset: 82px 16px 16px; } .time-controls { grid-template-columns: auto minmax(60px, 1fr) minmax(76px, auto) repeat(8, minmax(32px, auto)); } }
     @media (max-width: 680px) { .control-math { grid-template-columns: 1fr; height: auto; } .control-math > section + section { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0 0; } .parameter-section { min-height: 390px; } }
     @media (max-width: 560px) { .app { padding: 10px; gap: 10px; } .panel { padding: 12px; } .canvas-wrap { inset: 82px 12px 12px; } .control-math { gap: 9px; } .control-math > section + section { padding-left: 9px; } .time-controls { display: flex; flex-wrap: wrap; } .time-controls input[type="range"] { flex: 1 1 100px; width: auto; min-width: 65px; } #startTimeButton, #backTenButton, #forwardTenButton, #resetButton { display: none; } }
   </style>
@@ -207,13 +236,32 @@
     </section>
 
     <section class="panel simulator" aria-labelledby="simulator-title">
-      <div class="sim-head"><div><div class="eyebrow">02 / MOVIMIENTO</div><h1 id="simulator-title">SIMULACIÓN CÉLULAS A CONTRAFLUJO</h1></div><div><span class="panel-id" id="canvasReadout">CANVAS / 100 × 100</span><button class="theme-toggle drawer-toggle" id="openOptimizer" type="button" aria-expanded="false">AJUSTES</button></div></div>
+      <div class="sim-head">
+        <div>
+          <div class="eyebrow">02 / MOVIMIENTO</div>
+          <h1 id="simulator-title">SIMULACIÓN CÉLULAS A CONTRAFLUJO</h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="panel-id" id="canvasReadout">CANVAS / 100 × 100</span>
+          <button class="theme-toggle optimizer-pill-btn" id="openOptimizationDirect" type="button" title="Abrir controles de optimización">⚡ OPTIMIZACIÓN</button>
+          <button class="theme-toggle drawer-toggle" id="openOptimizer" type="button" aria-expanded="false">AJUSTES</button>
+        </div>
+      </div>
       <div class="canvas-wrap"><canvas id="fluidCanvas"></canvas><div class="canvas-readout">NODES <strong id="particleCount">--</strong><br>TIME <strong id="elapsedTime">0.00 s</strong><br>STATE <strong>CONTRA-FLOW</strong></div></div>
       <div class="time-controls"><label for="timeSlider">TIEMPO</label><input id="timeSlider" type="range" min="0" max="0" value="0" step="0.05" /><span class="time-readout" id="timeReadout">t = 0.00 s</span><button class="time-button" id="startTimeButton" type="button" title="Ir al primer segundo">|&lt;</button><button class="time-button" id="backOneButton" type="button" title="Retroceder un estado">−1</button><button class="time-button" id="backTenButton" type="button" title="Retroceder diez estados">−10</button><button class="time-button" id="forwardOneButton" type="button" title="Avanzar un estado">+1</button><button class="time-button" id="forwardTenButton" type="button" title="Avanzar diez estados">+10</button><button class="time-button optional-time-button" id="pauseButton" type="button">PAUSAR</button><button class="time-button active optional-time-button" id="liveButton" type="button">EN VIVO</button><button class="time-button optional-time-button" id="resetButton" type="button" title="Reiniciar simulación">RESET</button></div>
     </section>
 
     <section class="panel parameters" aria-labelledby="parameters-title">
-      <div class="panel-heading"><div><div class="eyebrow">03 / MODEL CONTROL</div><h2 id="parameters-title">Parameters & equations</h2></div><span class="panel-id">θ VECTOR</span></div>
+      <div class="panel-heading">
+        <div>
+          <div class="eyebrow">03 / MODEL CONTROL</div>
+          <h2 id="parameters-title">Parameters & equations</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="theme-toggle" id="toggleTraceBtn" type="button" title="Ver / Ocultar panel de traza de optimización">PANEL DE TRAZA</button>
+          <span class="panel-id">θ VECTOR</span>
+        </div>
+      </div>
       <div class="control-math"><section class="parameter-section"><div class="subhead">INPUT VECTOR / θ</div>
         <div class="parameter-navigator"><span>PARAMETROS</span><input id="parameterSlider" type="range" min="0" max="5" step="1" value="0" aria-label="Recorrer parámetros ajustables" /><span id="parameterPosition">1 / 6</span></div>
         <div class="slider-row" data-parameter="v0"><div class="slider-label"><span>V₀ / propulsion</span><output class="parameter-value" id="v0Value" data-key="v0" tabindex="0" role="button" aria-label="Editar velocidad de propulsión">1.80</output></div><input data-key="v0" id="v0" type="range" min="0" max="5" step=".001" value="1.8" /></div>
@@ -233,7 +281,28 @@
       </section></div>
     </section>
 
-    <section class="panel optimizer" aria-labelledby="optimizer-title"><div class="panel-heading"><div><div class="eyebrow">04 / PARAMETER ENGINE</div><h2 id="optimizer-title">Optimization trace</h2></div><span class="status" id="optimizerStatus">optimizer idle</span></div><div class="log-window" id="logWindow" aria-live="polite"></div></section>
+    <section class="panel optimizer" id="optimizerPanel" aria-labelledby="optimizer-title">
+      <div class="panel-heading">
+        <div>
+          <div class="eyebrow">04 / PARAMETER ENGINE</div>
+          <h2 id="optimizer-title">Optimization Trace & Verification</h2>
+        </div>
+        <div class="optimizer-heading-actions">
+          <span class="status" id="optimizerStatus">optimizer idle</span>
+          <button id="clearLogBtn" class="equation-action" type="button" style="padding:3px 8px;font-size:11px;">LIMPIAR</button>
+        </div>
+      </div>
+      <div class="optimizer-live-metrics" id="optimizerLiveMetrics">
+        <div class="metric"><label>MÉTODO</label><strong id="traceMethod" style="font-size:12px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">--</strong></div>
+        <div class="metric"><label>ITERACIÓN</label><strong id="traceIter">0 / 0</strong></div>
+        <div class="metric"><label>ERROR E</label><strong id="traceError">--</strong></div>
+        <div class="metric"><label>SIMULACIONES</label><strong id="traceEvals">0</strong></div>
+      </div>
+      <div class="verification-progress-track" style="margin-bottom:8px;">
+        <div class="verification-progress-bar" id="traceProgressBar" style="width: 0%;"></div>
+      </div>
+      <div class="log-window" id="logWindow" aria-live="polite"></div>
+    </section>
   </main>
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
   <aside class="control-drawer" id="controlDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
@@ -247,7 +316,33 @@
     </section>
     <section class="drawer-section" aria-labelledby="optimizationTitle">
       <div class="subhead" id="optimizationTitle">OPTIMIZAR PARÁMETROS</div>
-      <p>Define el punto inicial, la referencia y qué parámetros se ajustan. La referencia del notebook y los cuatro parámetros activos vienen preseleccionados.</p>
+      <p>Ajusta los parámetros físicos θ = [V₀, u₀, σ, w] para minimizar la diferencia contra los observables de referencia.</p>
+      
+      <div class="optimizer-method-group">
+        <label for="optimizerMethod" class="method-label">MÉTODO DE OPTIMIZACIÓN</label>
+        <select id="optimizerMethod" class="optimizer-select">
+          <option value="coordinate_descent">1. Descenso por Coordenadas (Coordinate Descent - Rápido)</option>
+          <option value="simplex" selected>2. Downhill Simplex (Nelder-Mead / Amoeba - Notebook)</option>
+          <option value="annealing">3. Recocido Simulado (Simulated Annealing - Notebook)</option>
+          <option value="scipy_simplex">4. Scipy Nelder-Mead (Si hay Python/Scipy)</option>
+          <option value="scipy_annealing">5. Scipy Dual Annealing (Si hay Python/Scipy)</option>
+        </select>
+        <div id="methodHelpText" class="method-help">
+          Amoeba / Nelder-Mead: deforma un simplex multidimensional mediante reflexión, expansión y contracción para hallar el mínimo sin derivadas.
+        </div>
+      </div>
+
+      <div class="optimizer-options-grid">
+        <div>
+          <label for="optimizerMaxIter">Iteraciones máx.</label>
+          <input id="optimizerMaxIter" type="number" min="5" max="100" step="5" value="40" />
+        </div>
+        <div>
+          <label for="optimizerTol">Tolerancia (ftol)</label>
+          <input id="optimizerTol" type="number" min="0.0001" max="0.1" step="0.001" value="0.005" />
+        </div>
+      </div>
+
       <div class="optimizer-parameter-grid" id="optimizerParameterGrid">
         <span></span><span>OBJETIVO</span><span>INICIO</span><span>BUSCAR</span>
         <label for="targetV0">V₀</label><input id="targetV0" data-optimizer-target="v0" type="number" min="0" max="5" step=".001" value="1" /><input id="initialV0" data-optimizer-initial="v0" type="number" min=".01" max="5" step=".001" value="1.8" /><input data-optimizer-search="v0" type="checkbox" checked aria-label="Optimizar V₀" />
@@ -255,9 +350,31 @@
         <label for="targetSigma">σ</label><input id="targetSigma" data-optimizer-target="sigma" type="number" min="0" max="5" step=".001" value="1" /><input id="initialSigma" data-optimizer-initial="sigma" type="number" min=".01" max="5" step=".001" value=".35" /><input data-optimizer-search="sigma" type="checkbox" checked aria-label="Optimizar σ" />
         <label for="targetAlignment">w</label><input id="targetAlignment" data-optimizer-target="alignment" type="number" min="0" max="5" step=".001" value="1" /><input id="initialAlignment" data-optimizer-initial="alignment" type="number" min=".01" max="5" step=".001" value="1.25" /><input data-optimizer-search="alignment" type="checkbox" checked aria-label="Optimizar w" />
       </div>
-      <div class="optimizer-config-actions"><button id="resetOptimizerTarget" type="button">RESTAURAR OBJETIVO DEL NOTEBOOK</button><button id="useCurrentParameters" type="button">USAR VALORES ACTUALES COMO INICIO</button></div>
-      <p>Se usa una búsqueda por coordenadas reproducible, limitada al rango 0.01–5. El cálculo de optimización usa hasta 40 células y 50 pasos para responder rápido.</p>
-      <button id="runOptimization" class="optimizer-action" type="button">OPTIMIZAR</button>
+
+      <div class="optimizer-config-actions">
+        <button id="resetOptimizerTarget" type="button">RESTAURAR OBJETIVO NOTEBOOK</button>
+        <button id="useCurrentParameters" type="button">USAR PARÁMETROS ACTUALES</button>
+      </div>
+
+      <div class="optimizer-verification-card" id="optimizerVerificationCard">
+        <div class="verification-header">
+          <span class="verification-badge" id="verificationBadge">LISTO</span>
+          <span class="verification-engine" id="verificationEngine">MODO: DETECTANDO...</span>
+        </div>
+        <div class="verification-stats">
+          <div><span>Iteración:</span> <strong id="verificationIter">0 / 40</strong></div>
+          <div><span>Error E:</span> <strong id="verificationError">--</strong></div>
+          <div><span>Simulaciones:</span> <strong id="verificationEvals">0</strong></div>
+        </div>
+        <div class="verification-progress-track">
+          <div class="verification-progress-bar" id="verificationBar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="optimizer-button-row">
+        <button id="runOptimization" class="optimizer-action" type="button">INICIAR OPTIMIZACIÓN</button>
+        <button id="cancelOptimization" class="optimizer-cancel-btn" type="button" style="display: none;">CANCELAR</button>
+      </div>
       <div id="optimizerMessage" class="optimizer-message" aria-live="polite">Listo para optimizar.</div>
       <p id="optimizerResult" class="optimizer-result"></p>
     </section>
@@ -374,12 +491,17 @@
 
     function addLog(optimizer, metrics) {
       const logWindow = document.getElementById("logWindow");
+      if (!logWindow) return;
       const now = new Date().toISOString().slice(11, 19);
       const line = document.createElement("div");
       line.className = "log-line";
-      line.textContent = `[${now}] OPTIMIZER iter=${String(optimizer.iteration || 0).padStart(3, "0")} err=${Number(optimizer.error || 0).toPrecision(4)} msd=${metrics.msd.toFixed(2)}`;
+      const meth = (optimizer.method || "OPT").toUpperCase();
+      const pStr = optimizer.params
+        ? ` | V₀=${formatParameterValue("v0", optimizer.params.v0)} u₀=${formatParameterValue("u0", optimizer.params.u0)} σ=${formatParameterValue("sigma", optimizer.params.sigma)} w=${formatParameterValue("alignment", optimizer.params.alignment)}`
+        : "";
+      line.textContent = `[${now}] [${meth}] iter=${String(optimizer.iteration || 0).padStart(3, "0")} err=${Number(optimizer.error || 0).toPrecision(4)}${metrics?.msd != null ? ` msd=${metrics.msd.toFixed(2)}` : ""}${pStr}`;
       logWindow.append(line);
-      while (logWindow.children.length > 9) logWindow.firstElementChild.remove();
+      while (logWindow.children.length > 25) logWindow.firstElementChild.remove();
       logWindow.scrollTop = logWindow.scrollHeight;
     }
 
@@ -417,19 +539,59 @@
       const isRunning = optimizer.status === "OPTIMIZING";
       document.body.classList.toggle("optimizing", isRunning);
       document.getElementById("optimizerStatus").textContent = isRunning ? "optimizer running" : "optimizer idle";
-      document.getElementById("runOptimization").disabled = isRunning;
-      document.getElementById("runOptimization").textContent = isRunning ? "OPTIMIZANDO..." : "OPTIMIZAR";
+      const runBtn = document.getElementById("runOptimization");
+      const cancelBtn = document.getElementById("cancelOptimization");
+      if (runBtn) {
+        runBtn.disabled = isRunning;
+        runBtn.textContent = isRunning ? "OPTIMIZANDO..." : "INICIAR OPTIMIZACIÓN";
+      }
+      if (cancelBtn) {
+        cancelBtn.style.display = isRunning ? "block" : "none";
+      }
       document.getElementById("optimizerMessage").textContent = optimizer.message || "Listo para optimizar.";
       const result = document.getElementById("optimizerResult");
       result.textContent = optimizer.params
         ? `V₀ ${formatParameterValue("v0", optimizer.params.v0)} · u₀ ${formatParameterValue("u0", optimizer.params.u0)} · σ ${formatParameterValue("sigma", optimizer.params.sigma)} · w ${formatParameterValue("alignment", optimizer.params.alignment)}${Number.isFinite(optimizer.error) ? `\nError: ${optimizer.error.toPrecision(5)}` : ""}`
         : "";
+
+      // Actualizar tarjeta de verificación en vivo
+      const badge = document.getElementById("verificationBadge");
+      if (badge) {
+        badge.className = "verification-badge " + (isRunning ? "running" : optimizer.status === "COMPLETE" ? "done" : optimizer.status === "CANCELLED" ? "cancel" : "");
+        badge.textContent = isRunning ? "OPTIMIZANDO..." : optimizer.status === "COMPLETE" ? "CONVERGIDO" : optimizer.status === "CANCELLED" ? "CANCELADO" : "LISTO";
+      }
+      const maxIt = optimizer.maxIterations || 40;
+      const currentIt = optimizer.iteration || 0;
+      const percent = Math.min(100, Math.round((currentIt / maxIt) * 100));
+
+      const vIter = document.getElementById("verificationIter");
+      if (vIter) vIter.textContent = `${currentIt} / ${maxIt}`;
+      const vErr = document.getElementById("verificationError");
+      if (vErr) vErr.textContent = Number.isFinite(optimizer.error) ? optimizer.error.toPrecision(5) : "--";
+      const vEvals = document.getElementById("verificationEvals");
+      if (vEvals) vEvals.textContent = String(optimizer.evaluations || currentIt);
+      const vBar = document.getElementById("verificationBar");
+      if (vBar) vBar.style.width = `${percent}%`;
+
+      // Actualizar métricas del panel de traza
+      const tMethod = document.getElementById("traceMethod");
+      if (tMethod) tMethod.textContent = optimizer.methodName || optimizer.method || "--";
+      const tIter = document.getElementById("traceIter");
+      if (tIter) tIter.textContent = `${currentIt} / ${maxIt}`;
+      const tErr = document.getElementById("traceError");
+      if (tErr) tErr.textContent = Number.isFinite(optimizer.error) ? optimizer.error.toPrecision(5) : "--";
+      const tEvals = document.getElementById("traceEvals");
+      if (tEvals) tEvals.textContent = String(optimizer.evaluations || currentIt);
+      const tBar = document.getElementById("traceProgressBar");
+      if (tBar) tBar.style.width = `${percent}%`;
+
       if (optimizer.status === "COMPLETE" && optimizer.params) {
         Object.entries(optimizer.params).forEach(([key, value]) => {
           params[key] = value;
           const input = document.getElementById(key);
-          input.value = String(value);
-          document.getElementById(`${key}Value`).textContent = formatParameterValue(key, value);
+          if (input) input.value = String(value);
+          const out = document.getElementById(`${key}Value`);
+          if (out) out.textContent = formatParameterValue(key, value);
         });
       }
     }
@@ -552,31 +714,81 @@
     sensitivitySlider.addEventListener("input", updateSensitivity);
     updateSensitivity();
 
+    const methodDescriptions = {
+      coordinate_descent: "Búsqueda por Coordenadas: ajusta cada parámetro secuencialmente con pasos discretos acotados. Rápido, estable y determinista.",
+      simplex: "Downhill Simplex (Nelder-Mead / Amoeba): deforma un simplex geométrico mediante reflexión, expansión y contracción para hallar el mínimo sin derivadas.",
+      annealing: "Recocido Simulado (Simulated Annealing): método estocástico con fluctuaciones térmicas decrecientes para escapar de mínimos locales.",
+      scipy_simplex: "Scipy Nelder-Mead: optimizador estándar de la librería científica Scipy (ejecutado en el servidor Python).",
+      scipy_annealing: "Scipy Dual Annealing: optimizador global estocástico de Scipy con recocido dual y búsqueda local.",
+    };
+
+    const optimizerMethodSelect = document.getElementById("optimizerMethod");
+    const methodHelpText = document.getElementById("methodHelpText");
+    if (optimizerMethodSelect && methodHelpText) {
+      optimizerMethodSelect.addEventListener("change", () => {
+        methodHelpText.textContent = methodDescriptions[optimizerMethodSelect.value] || "";
+        saveOptimizerConfig();
+      });
+    }
+
+    document.getElementById("openOptimizationDirect")?.addEventListener("click", () => {
+      setDrawerOpen(true);
+      setTimeout(() => {
+        document.getElementById("optimizationTitle")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    });
+
+    document.getElementById("toggleTraceBtn")?.addEventListener("click", () => {
+      document.body.classList.toggle("trace-open");
+    });
+
+    document.getElementById("clearLogBtn")?.addEventListener("click", () => {
+      document.getElementById("logWindow").innerHTML = "";
+    });
+
+    document.getElementById("cancelOptimization")?.addEventListener("click", () => {
+      if (isClientMode) {
+        clientOptimizerCancelRequested = true;
+      } else {
+        fetch("/api/config", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ command: "cancel_optimization" }),
+        }).catch(() => {});
+      }
+    });
+
     const optimizerConfigStorageKey = "simulacion-optimizer-config";
     const optimizerConfigFields = [
-      ...document.querySelectorAll("[data-optimizer-target], [data-optimizer-initial], [data-optimizer-search]"),
+      ...document.querySelectorAll("[data-optimizer-target], [data-optimizer-initial], [data-optimizer-search], #optimizerMethod, #optimizerMaxIter, #optimizerTol"),
     ];
+
     function readOptimizerConfig(requireSelection = true) {
       const config = { initial: {}, reference: {}, optimize: [] };
       for (const key of ["v0", "u0", "sigma", "alignment"]) {
         const initial = document.querySelector(`[data-optimizer-initial="${key}"]`);
         const reference = document.querySelector(`[data-optimizer-target="${key}"]`);
         const search = document.querySelector(`[data-optimizer-search="${key}"]`);
-        if (!initial.reportValidity() || !reference.reportValidity()) return null;
+        if (!initial?.reportValidity() || !reference?.reportValidity()) return null;
         config.initial[key] = Number(initial.value);
         config.reference[key] = Number(reference.value);
-        if (search.checked) config.optimize.push(key);
+        if (search?.checked) config.optimize.push(key);
       }
+      config.method = document.getElementById("optimizerMethod")?.value || "simplex";
+      config.max_iterations = Number(document.getElementById("optimizerMaxIter")?.value) || 40;
+      config.tolerance = Number(document.getElementById("optimizerTol")?.value) || 0.005;
       if (requireSelection && !config.optimize.length) {
         document.getElementById("optimizerMessage").textContent = "Selecciona al menos un parámetro para buscar.";
         return null;
       }
       return config;
     }
+
     function saveOptimizerConfig() {
       const config = readOptimizerConfig(false);
       if (config) localStorage.setItem(optimizerConfigStorageKey, JSON.stringify(config));
     }
+
     const savedOptimizerConfig = localStorage.getItem(optimizerConfigStorageKey);
     if (savedOptimizerConfig) {
       try {
@@ -585,21 +797,34 @@
           const initial = document.querySelector(`[data-optimizer-initial="${key}"]`);
           const reference = document.querySelector(`[data-optimizer-target="${key}"]`);
           const search = document.querySelector(`[data-optimizer-search="${key}"]`);
-          if (Number.isFinite(saved.initial?.[key])) initial.value = String(saved.initial[key]);
-          if (Number.isFinite(saved.reference?.[key])) reference.value = String(saved.reference[key]);
-          if (Array.isArray(saved.optimize)) search.checked = saved.optimize.includes(key);
+          if (initial && Number.isFinite(saved.initial?.[key])) initial.value = String(saved.initial[key]);
+          if (reference && Number.isFinite(saved.reference?.[key])) reference.value = String(saved.reference[key]);
+          if (search && Array.isArray(saved.optimize)) search.checked = saved.optimize.includes(key);
+        }
+        if (saved.method && document.getElementById("optimizerMethod")) {
+          document.getElementById("optimizerMethod").value = saved.method;
+          if (methodHelpText) methodHelpText.textContent = methodDescriptions[saved.method] || "";
+        }
+        if (saved.max_iterations && document.getElementById("optimizerMaxIter")) {
+          document.getElementById("optimizerMaxIter").value = saved.max_iterations;
+        }
+        if (saved.tolerance && document.getElementById("optimizerTol")) {
+          document.getElementById("optimizerTol").value = saved.tolerance;
         }
       } catch (error) {
         localStorage.removeItem(optimizerConfigStorageKey);
       }
     }
-    optimizerConfigFields.forEach((field) => field.addEventListener("change", saveOptimizerConfig));
+
+    optimizerConfigFields.forEach((field) => field?.addEventListener("change", saveOptimizerConfig));
+
     document.getElementById("useCurrentParameters").addEventListener("click", () => {
       for (const key of ["v0", "u0", "sigma", "alignment"]) {
         document.querySelector(`[data-optimizer-initial="${key}"]`).value = String(params[key]);
       }
       saveOptimizerConfig();
     });
+
     document.getElementById("resetOptimizerTarget").addEventListener("click", () => {
       document.querySelectorAll("[data-optimizer-target]").forEach((input) => { input.value = "1"; });
       saveOptimizerConfig();
@@ -611,7 +836,14 @@
       localStorage.setItem(optimizerConfigStorageKey, JSON.stringify(optimizerConfig));
       const button = document.getElementById("runOptimization");
       button.disabled = true;
-      document.getElementById("optimizerMessage").textContent = "Solicitando optimización...";
+      document.getElementById("optimizerMessage").textContent = "Iniciando optimización...";
+      document.body.classList.add("trace-open");
+
+      if (isClientMode) {
+        runClientOptimization(optimizerConfig);
+        return;
+      }
+
       try {
         const response = await fetch("/api/config", {
           method: "POST",
@@ -620,16 +852,34 @@
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-        renderOptimizerStatus({ status: "OPTIMIZING", message: "Optimización iniciada." });
+        renderOptimizerStatus({
+          status: "OPTIMIZING",
+          method: optimizerConfig.method,
+          methodName: methodDescriptions[optimizerConfig.method]?.split(":")[0] || optimizerConfig.method,
+          maxIterations: optimizerConfig.max_iterations,
+          message: "Optimización iniciada en el servidor.",
+        });
       } catch (error) {
-        button.disabled = false;
-        document.getElementById("optimizerMessage").textContent = `No se pudo iniciar: ${error.message}`;
+        console.warn("Servidor no respondió, corriendo en modo autónomo cliente:", error);
+        enableClientMode();
+        runClientOptimization(optimizerConfig);
       }
     });
 
     function postControl(payload) {
+      if (isClientMode) {
+        if (payload.equations) equations = payload.equations;
+        Object.keys(params).forEach((k) => {
+          if (payload[k] !== undefined) params[k] = payload[k];
+        });
+        if (payload.nodes !== undefined || payload.canvasSize !== undefined || payload.command === "reset") {
+          simulationSize = params.canvasSize;
+          initClientParticles(params.nodes, params.canvasSize);
+        }
+        return;
+      }
       fetch("/api/config", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }).catch(() => {
-        status.textContent = "control offline";
+        if (!isClientMode) enableClientMode();
       });
     }
 
@@ -670,11 +920,13 @@
       equations.push({ id: `custom-${Date.now()}`, name, kind: document.getElementById("equationKind").value, expression, enabled: true });
       renderEquations(); syncEquations();
     });
+
     document.querySelectorAll(".chart-tool").forEach((button) => button.addEventListener("click", () => {
       selectedObservable = button.dataset.observable;
       document.querySelectorAll(".chart-tool").forEach((item) => item.classList.toggle("active", item === button));
       updateChart();
     }));
+
     let cameraStream;
     document.getElementById("cameraButton").addEventListener("click", async () => {
       const video = document.getElementById("cameraPreview");
@@ -708,25 +960,648 @@
     });
     renderEquations();
 
-    function connect() {
-      if (stream?.readyState === EventSource.OPEN || stream?.readyState === EventSource.CONNECTING) return;
-      stream = new EventSource("/events");
-      stream.onopen = () => { lastReceivedAt = Date.now(); status.textContent = "stream online"; status.style.color = "var(--mint)"; postControl({ ...params, equations }); };
-      stream.onmessage = (event) => {
-        const payload = JSON.parse(event.data);
-        if (payload.type === "optimizer") renderOptimizerStatus(payload.optimizer);
-        else receiveTelemetry(payload);
+    // =========================================================================
+    // MOTOR DE SIMULACIÓN Y OPTIMIZACIÓN CLIENT-SIDE (COMPATIBLE CON GITHUB PAGES)
+    // =========================================================================
+    let isClientMode = false;
+    let clientSimTimer = null;
+    let clientParticles = [];
+    let clientStep = 0;
+    let clientHistory = { posX: [], posY: [], boxX: [], boxY: [], velX: [], velY: [] };
+    let clientOptimizerActive = false;
+    let clientOptimizerCancelRequested = false;
+
+    function gaussianRandom(mean = 0, stdev = 1) {
+      let u = 1 - Math.random();
+      let v = Math.random();
+      let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      return mean + z * stdev;
+    }
+
+    function wrapDelta(d, lim) {
+      d = d % lim;
+      if (d > lim / 2) d -= lim;
+      else if (d < -lim / 2) d += lim;
+      return d;
+    }
+
+    function initClientParticles(numCells, canvasSize) {
+      clientParticles = [];
+      clientStep = 0;
+      clientHistory = { posX: [], posY: [], boxX: [], boxY: [], velX: [], velY: [] };
+      const half = Math.floor(numCells / 2);
+      for (let i = 0; i < numCells; i++) {
+        const x = Math.random() * canvasSize;
+        const y = Math.random() * canvasSize;
+        const angle = i < half ? 0 : Math.PI;
+        clientParticles.push({
+          x, y,
+          realX: x, realY: y,
+          vx: 0, vy: 0,
+          angle: angle
+        });
+      }
+      const activeEqs = new Set(equations.filter(e => e.enabled).map(e => e.kind));
+      for (let s = 0; s < 25; s++) {
+        stepClientPhysics(clientParticles, numCells, canvasSize, params.v0, params.u0, params.alignment, params.sigma, activeEqs, 0.05);
+      }
+    }
+
+    function stepClientPhysics(particlesList, numCells, canvasSize, v0, u0, w, sigma, activeEqs, dt = 0.05) {
+      const radio = 0.5;
+      const twoRadio = 2.0 * radio;
+      const fx = new Float64Array(numCells);
+      const fy = new Float64Array(numCells);
+      const align = new Float64Array(numCells);
+
+      const hasRepulsion = activeEqs.has("repulsion");
+      const hasAlignment = activeEqs.has("alignment");
+      const hasPropulsion = activeEqs.has("propulsion");
+      const hasNoise = activeEqs.has("noise");
+
+      for (let i = 0; i < numCells; i++) {
+        const pi = particlesList[i];
+        for (let j = i + 1; j < numCells; j++) {
+          const pj = particlesList[j];
+          const dx = wrapDelta(pi.x - pj.x, canvasSize);
+          const dy = wrapDelta(pi.y - pj.y, canvasSize);
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 1e-9 && dist < twoRadio) {
+            if (hasRepulsion) {
+              const rep = (twoRadio - dist) / dist;
+              const rx = rep * dx;
+              const ry = rep * dy;
+              fx[i] += rx; fy[i] += ry;
+              fx[j] -= rx; fy[j] -= ry;
+            }
+            if (hasAlignment) {
+              const dAngle = pj.angle - pi.angle;
+              const al = w * Math.sin(dAngle);
+              align[i] += al;
+              align[j] -= al;
+            }
+          }
+        }
+      }
+
+      const sqrtDt = Math.sqrt(dt);
+      for (let i = 0; i < numCells; i++) {
+        const p = particlesList[i];
+        const noiseAngle = hasNoise ? sigma * gaussianRandom(0, 1) * sqrtDt : 0;
+        p.angle = ((p.angle + align[i] * dt + noiseAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+
+        const dirX = Math.cos(p.angle);
+        const dirY = Math.sin(p.angle);
+
+        const dxStep = u0 * dt * fx[i] + (hasPropulsion ? v0 * dirX * dt : 0);
+        const dyStep = u0 * dt * fy[i] + (hasPropulsion ? v0 * dirY * dt : 0);
+
+        p.vx = dxStep / dt;
+        p.vy = dyStep / dt;
+        p.realX += dxStep;
+        p.realY += dyStep;
+
+        p.x = ((p.x + dxStep) % canvasSize + canvasSize) % canvasSize;
+        p.y = ((p.y + dyStep) % canvasSize + canvasSize) % canvasSize;
+      }
+    }
+
+    function computeObservablesFromHistories(histRealX, histRealY, histBoxX, histBoxY, histVx, histVy, canvasSize, dt) {
+      const T = histRealX.length;
+      if (T < 2) return null;
+      const N = histRealX[0].length;
+
+      const msd = [];
+      for (let k = 0; k < T; k++) {
+        let sum = 0;
+        let count = (T - k) * N;
+        for (let t = 0; t < T - k; t++) {
+          for (let i = 0; i < N; i++) {
+            const dx = histRealX[t + k][i] - histRealX[t][i];
+            const dy = histRealY[t + k][i] - histRealY[t][i];
+            sum += dx * dx + dy * dy;
+          }
+        }
+        msd.push([k * dt, count > 0 ? sum / count : 0]);
+      }
+
+      const allVx = [];
+      const allVy = [];
+      for (let t = 0; t < T; t++) {
+        for (let i = 0; i < N; i++) {
+          allVx.push(histVx[t][i]);
+          allVy.push(histVy[t][i]);
+        }
+      }
+      const minV = Math.min(...allVx, ...allVy, -1.0);
+      const maxV = Math.max(...allVx, ...allVy, 1.0);
+      const numBins = 30;
+      const binWidth = (maxV - minV) / numBins || 0.1;
+      const countsVx = new Array(numBins).fill(0);
+      const countsVy = new Array(numBins).fill(0);
+      const totalCount = allVx.length;
+
+      for (let i = 0; i < totalCount; i++) {
+        const idxVx = Math.min(numBins - 1, Math.max(0, Math.floor((allVx[i] - minV) / binWidth)));
+        const idxVy = Math.min(numBins - 1, Math.max(0, Math.floor((allVy[i] - minV) / binWidth)));
+        countsVx[idxVx]++;
+        countsVy[idxVy]++;
+      }
+
+      const velocityDistribution = [];
+      for (let b = 0; b < numBins; b++) {
+        const center = minV + (b + 0.5) * binWidth;
+        const densVx = countsVx[b] / (totalCount * binWidth);
+        const densVy = countsVy[b] / (totalCount * binWidth);
+        velocityDistribution.push([center, densVx, densVy]);
+      }
+
+      let varVx = 0, varVy = 0;
+      for (let t = 0; t < T; t++) {
+        for (let i = 0; i < N; i++) {
+          varVx += histVx[t][i] * histVx[t][i];
+          varVy += histVy[t][i] * histVy[t][i];
+        }
+      }
+      varVx /= (N * T);
+      varVy /= (N * T);
+      const temporalCorrelation = [];
+      const halfT = Math.floor(T / 2);
+      for (let k = 0; k < halfT; k++) {
+        let sumX = 0, sumY = 0;
+        const count = (T - k) * N;
+        for (let t = 0; t < T - k; t++) {
+          for (let i = 0; i < N; i++) {
+            sumX += histVx[t][i] * histVx[t + k][i];
+            sumY += histVy[t][i] * histVy[t + k][i];
+          }
+        }
+        const cxx = varVx > 1e-12 ? (sumX / count) / varVx : 0;
+        const cyy = varVy > 1e-12 ? (sumY / count) / varVy : 0;
+        temporalCorrelation.push([k * dt, cxx, cyy]);
+      }
+
+      const rmax = canvasSize / 2.0;
+      const spatialBins = 30;
+      const dr = rmax / spatialBins;
+      const numX = new Float64Array(spatialBins);
+      const numY = new Float64Array(spatialBins);
+      const denom = new Float64Array(spatialBins);
+
+      for (let t = 0; t < T; t++) {
+        for (let i = 0; i < N; i++) {
+          for (let j = i + 1; j < N; j++) {
+            const dx = wrapDelta(histBoxX[t][i] - histBoxX[t][j], canvasSize);
+            const dy = wrapDelta(histBoxY[t][i] - histBoxY[t][j], canvasSize);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 0 && dist < rmax) {
+              const bIdx = Math.min(spatialBins - 1, Math.floor(dist / dr));
+              numX[bIdx] += histVx[t][i] * histVx[t][j];
+              numY[bIdx] += histVy[t][i] * histVy[t][j];
+              denom[bIdx] += 1;
+            }
+          }
+        }
+      }
+
+      const spatialCorrelation = [];
+      const pairDistribution = [];
+      const density = N / (canvasSize * canvasSize);
+      for (let b = 0; b < spatialBins; b++) {
+        const r = (b + 0.5) * dr;
+        const cnt = denom[b];
+        const cxx = (cnt > 0 && varVx > 1e-12) ? (numX[b] / cnt) / varVx : 0;
+        const cyy = (cnt > 0 && varVy > 1e-12) ? (numY[b] / cnt) / varVy : 0;
+        const area = 2.0 * Math.PI * r * dr;
+        const gr = (T * N * density * area > 0) ? (2.0 * cnt) / (T * N * density * area) : 0;
+        spatialCorrelation.push([r, cxx, cyy]);
+        pairDistribution.push([r, gr]);
+      }
+
+      return { msd, velocityDistribution, temporalCorrelation, spatialCorrelation, pairDistribution };
+    }
+
+    function simulateBatchForOptimization(theta, numCells = 35, nSteps = 45, canvasSize = 100) {
+      const [v0, u0, w, sigma] = theta;
+      const activeEqs = new Set(["propulsion", "repulsion", "alignment", "noise"]);
+      const parts = [];
+      const half = Math.floor(numCells / 2);
+      for (let i = 0; i < numCells; i++) {
+        const x = ((i * 17.3 + 12.1) % canvasSize);
+        const y = ((i * 29.7 + 31.4) % canvasSize);
+        parts.push({
+          x, y, realX: x, realY: y, vx: 0, vy: 0, angle: i < half ? 0 : Math.PI
+        });
+      }
+
+      for (let s = 0; s < 15; s++) {
+        stepClientPhysics(parts, numCells, canvasSize, v0, u0, w, sigma, activeEqs, 0.05);
+      }
+
+      const hRealX = [], hRealY = [], hBoxX = [], hBoxY = [], hVx = [], hVy = [];
+      for (let s = 0; s < nSteps; s++) {
+        stepClientPhysics(parts, numCells, canvasSize, v0, u0, w, sigma, activeEqs, 0.05);
+        hRealX.push(parts.map(p => p.realX));
+        hRealY.push(parts.map(p => p.realY));
+        hBoxX.push(parts.map(p => p.x));
+        hBoxY.push(parts.map(p => p.y));
+        hVx.push(parts.map(p => p.vx));
+        hVy.push(parts.map(p => p.vy));
+      }
+
+      return computeObservablesFromHistories(hRealX, hRealY, hBoxX, hBoxY, hVx, hVy, canvasSize, 0.05);
+    }
+
+    function computeObservablesError(candidateObs, referenceObs) {
+      if (!candidateObs || !referenceObs) return 1.0;
+      let totalError = 0;
+      let terms = 0;
+
+      if (candidateObs.msd && referenceObs.msd) {
+        let errMsd = 0, scaleMsd = 0;
+        const len = Math.min(candidateObs.msd.length, referenceObs.msd.length);
+        for (let i = 0; i < len; i++) {
+          const diff = candidateObs.msd[i][1] - referenceObs.msd[i][1];
+          errMsd += diff * diff;
+          scaleMsd += referenceObs.msd[i][1] * referenceObs.msd[i][1];
+        }
+        totalError += errMsd / Math.max(scaleMsd, 1e-6);
+        terms++;
+      }
+
+      if (candidateObs.temporalCorrelation && referenceObs.temporalCorrelation) {
+        let errAuto = 0, scaleAuto = 0;
+        const len = Math.min(candidateObs.temporalCorrelation.length, referenceObs.temporalCorrelation.length);
+        for (let i = 0; i < len; i++) {
+          const diffX = candidateObs.temporalCorrelation[i][1] - referenceObs.temporalCorrelation[i][1];
+          const diffY = candidateObs.temporalCorrelation[i][2] - referenceObs.temporalCorrelation[i][2];
+          errAuto += (diffX * diffX + diffY * diffY) / 2;
+          scaleAuto += (referenceObs.temporalCorrelation[i][1] ** 2 + referenceObs.temporalCorrelation[i][2] ** 2) / 2;
+        }
+        totalError += errAuto / Math.max(scaleAuto, 1e-6);
+        terms++;
+      }
+
+      if (candidateObs.pairDistribution && referenceObs.pairDistribution) {
+        let errGr = 0, scaleGr = 0;
+        const len = Math.min(candidateObs.pairDistribution.length, referenceObs.pairDistribution.length);
+        for (let i = 0; i < len; i++) {
+          const diff = candidateObs.pairDistribution[i][1] - referenceObs.pairDistribution[i][1];
+          errGr += diff * diff;
+          scaleGr += referenceObs.pairDistribution[i][1] * referenceObs.pairDistribution[i][1];
+        }
+        totalError += errGr / Math.max(scaleGr, 1e-6);
+        terms++;
+      }
+
+      return terms > 0 ? totalError / terms : 1.0;
+    }
+
+    function startClientSimulation() {
+      if (clientSimTimer) clearInterval(clientSimTimer);
+      initClientParticles(params.nodes, params.canvasSize);
+
+      clientSimTimer = setInterval(() => {
+        if (playbackMode) return;
+        const activeEqs = new Set(equations.filter(e => e.enabled).map(e => e.kind));
+        stepClientPhysics(clientParticles, params.nodes, params.canvasSize, params.v0, params.u0, params.alignment, params.sigma, activeEqs, 0.05);
+        clientStep++;
+
+        clientHistory.posX.push(clientParticles.map(p => p.realX));
+        clientHistory.posY.push(clientParticles.map(p => p.realY));
+        clientHistory.boxX.push(clientParticles.map(p => p.x));
+        clientHistory.boxY.push(clientParticles.map(p => p.y));
+        clientHistory.velX.push(clientParticles.map(p => p.vx));
+        clientHistory.velY.push(clientParticles.map(p => p.vy));
+
+        if (clientHistory.posX.length > 60) {
+          clientHistory.posX.shift(); clientHistory.posY.shift();
+          clientHistory.boxX.shift(); clientHistory.boxY.shift();
+          clientHistory.velX.shift(); clientHistory.velY.shift();
+        }
+
+        const includeObs = (clientStep % 10 === 0);
+        if (includeObs && clientHistory.posX.length >= 10) {
+          const obs = computeObservablesFromHistories(
+            clientHistory.posX, clientHistory.posY,
+            clientHistory.boxX, clientHistory.boxY,
+            clientHistory.velX, clientHistory.velY,
+            params.canvasSize, 0.05
+          );
+          if (obs) clientObservables = obs;
+        }
+
+        let speedSum = 0;
+        for (let i = 0; i < clientParticles.length; i++) {
+          speedSum += Math.hypot(clientParticles[i].vx, clientParticles[i].vy);
+        }
+        const meanSpd = clientParticles.length > 0 ? speedSum / clientParticles.length : 0;
+        const dens = clientParticles.length / (params.canvasSize * params.canvasSize);
+
+        const currentMsdVal = clientObservables.msd.length > 0 ? clientObservables.msd[clientObservables.msd.length - 1][1] : 0;
+        const currentAutoVal = clientObservables.temporalCorrelation.length > 0 ? clientObservables.temporalCorrelation[clientObservables.temporalCorrelation.length - 1][1] : 0;
+
+        const payload = {
+          timestamp: Date.now(),
+          step: clientStep,
+          timeSeconds: Number((clientStep * 0.05).toFixed(2)),
+          particles: clientParticles.map(p => [p.x, p.y, p.vx, p.vy, p.angle]),
+          metrics: {
+            msd: currentMsdVal,
+            autocorrelation: currentAutoVal,
+            meanSpeed: meanSpd,
+            density: dens,
+          },
+          simulation: { nodes: params.nodes, canvasSize: params.canvasSize, dt: 0.05 },
+        };
+        if (includeObs) payload.observables = clientObservables;
+        receiveTelemetry(payload);
+      }, 50);
+    }
+
+    async function runClientOptimization(config) {
+      clientOptimizerActive = true;
+      clientOptimizerCancelRequested = false;
+
+      const method = config.method || "simplex";
+      const maxIter = config.max_iterations || 40;
+      const tol = config.tolerance || 0.005;
+      const methodName = methodDescriptions[method]?.split(":")[0] || method;
+
+      renderOptimizerStatus({
+        status: "OPTIMIZING",
+        method: method,
+        methodName: methodName,
+        iteration: 0,
+        maxIterations: maxIter,
+        evaluations: 0,
+        error: 1.0,
+        params: { ...config.initial },
+        message: `[${methodName}] Calculando observables de referencia...`,
+      });
+
+      const refTheta = [config.reference.v0, config.reference.u0, config.reference.alignment, config.reference.sigma];
+      const refObservables = simulateBatchForOptimization(refTheta);
+
+      let evaluations = 0;
+      function evaluateError(cand) {
+        evaluations++;
+        const candTheta = [cand[0], cand[1], cand[3], cand[2]];
+        const candObs = simulateBatchForOptimization(candTheta);
+        return computeObservablesError(candObs, refObservables);
+      }
+
+      const paramKeys = ["v0", "u0", "sigma", "alignment"];
+      let point = [config.initial.v0, config.initial.u0, config.initial.sigma, config.initial.alignment];
+      const activeAxes = paramKeys.map((k, idx) => config.optimize.includes(k) ? idx : -1).filter(idx => idx >= 0);
+
+      if (activeAxes.length === 0) {
+        renderOptimizerStatus({ status: "IDLE", message: "Selecciona al menos un parámetro a optimizar." });
+        return;
+      }
+
+      let bestError = evaluateError(point);
+      let bestPoint = [...point];
+
+      const report = (iter, err, pt) => {
+        const pObj = { v0: Number(pt[0].toFixed(3)), u0: Number(pt[1].toFixed(3)), sigma: Number(pt[2].toFixed(3)), alignment: Number(pt[3].toFixed(3)) };
+        renderOptimizerStatus({
+          status: "OPTIMIZING",
+          method: method,
+          methodName: methodName,
+          iteration: iter,
+          maxIterations: maxIter,
+          evaluations: evaluations,
+          error: err,
+          params: pObj,
+          message: `[${methodName}] Iteración ${iter}/${maxIter}: error ${err.toPrecision(5)} (${evaluations} evaluaciones).`,
+        });
+        addLog({ method, iteration: iter, error: err, params: pObj }, { msd: clientObservables.msd[clientObservables.msd.length - 1]?.[1] || 0 });
       };
-      stream.onerror = () => { status.textContent = "reconnecting"; status.style.color = "#ffcf66"; stream.close(); clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, 800); };
+
+      try {
+        if (method === "coordinate_descent") {
+          let step = 0.5;
+          for (let iter = 1; iter <= maxIter; iter++) {
+            if (clientOptimizerCancelRequested) break;
+            let improved = false;
+            for (const ax of activeAxes) {
+              if (clientOptimizerCancelRequested) break;
+              for (const dir of [-1.0, 1.0]) {
+                const cand = [...bestPoint];
+                cand[ax] = Math.max(0.01, Math.min(5.0, cand[ax] + dir * step));
+                const err = evaluateError(cand);
+                if (err < bestError) {
+                  bestPoint = cand;
+                  bestError = err;
+                  improved = true;
+                }
+              }
+            }
+            report(iter, bestError, bestPoint);
+            await new Promise(r => setTimeout(r, 20));
+            if (!improved) step *= 0.5;
+            if (step < tol || bestError < 1e-6) break;
+          }
+        } else if (method === "annealing" || method === "scipy_annealing") {
+          let temp = 1.0;
+          const cooling = 0.92;
+          for (let iter = 1; iter <= maxIter; iter++) {
+            if (clientOptimizerCancelRequested) break;
+            const cand = [...bestPoint];
+            for (const ax of activeAxes) {
+              cand[ax] = Math.max(0.01, Math.min(5.0, cand[ax] + gaussianRandom(0, Math.max(0.05, 0.4 * temp))));
+            }
+            const candErr = evaluateError(cand);
+            const delta = candErr - bestError;
+            if (delta < 0 || (temp > 1e-4 && Math.random() < Math.exp(-delta / temp))) {
+              bestPoint = cand;
+              bestError = candErr;
+            }
+            report(iter, bestError, bestPoint);
+            await new Promise(r => setTimeout(r, 20));
+            temp *= cooling;
+            if (bestError < tol) break;
+          }
+        } else {
+          // Downhill Simplex (Nelder-Mead / Amoeba)
+          const k = activeAxes.length;
+          const subToFull = (sub) => {
+            const full = [...point];
+            activeAxes.forEach((ax, idx) => { full[ax] = sub[idx]; });
+            return full;
+          };
+
+          const x0 = activeAxes.map(ax => point[ax]);
+          const vertices = [[...x0]];
+          const scores = [bestError];
+
+          for (let i = 0; i < k; i++) {
+            const v = [...x0];
+            const stp = v[i] + 0.25 <= 5.0 ? 0.25 : -0.25;
+            v[i] = Math.max(0.01, Math.min(5.0, v[i] + stp));
+            vertices.push(v);
+            scores.push(evaluateError(subToFull(v)));
+          }
+
+          for (let iter = 1; iter <= maxIter; iter++) {
+            if (clientOptimizerCancelRequested) break;
+
+            const order = scores.map((s, idx) => ({ s, idx })).sort((a, b) => a.s - b.s);
+            const sortedVerts = order.map(o => vertices[o.idx]);
+            const sortedScores = order.map(o => o.s);
+
+            for (let i = 0; i <= k; i++) {
+              vertices[i] = sortedVerts[i];
+              scores[i] = sortedScores[i];
+            }
+
+            bestError = scores[0];
+            bestPoint = subToFull(vertices[0]);
+            report(iter, bestError, bestPoint);
+            await new Promise(r => setTimeout(r, 20));
+
+            const ihi = k;
+            const inhi = k - 1;
+            const ilo = 0;
+
+            const rtol = 2.0 * Math.abs(scores[ihi] - scores[ilo]) / (Math.abs(scores[ihi]) + Math.abs(scores[ilo]) + 1e-10);
+            if (rtol < tol || bestError < 1e-6) break;
+
+            const xBar = new Float64Array(k);
+            for (let i = 0; i < k; i++) {
+              for (let d = 0; d < k; d++) xBar[d] += vertices[i][d];
+            }
+            for (let d = 0; d < k; d++) xBar[d] /= k;
+
+            const xr = [];
+            for (let d = 0; d < k; d++) xr.push(Math.max(0.01, Math.min(5.0, xBar[d] + 1.0 * (xBar[d] - vertices[ihi][d]))));
+            const yr = evaluateError(subToFull(xr));
+
+            if (yr < scores[ilo]) {
+              const xe = [];
+              for (let d = 0; d < k; d++) xe.push(Math.max(0.01, Math.min(5.0, xBar[d] + 2.0 * (xr[d] - xBar[d]))));
+              const ye = evaluateError(subToFull(xe));
+              if (ye < yr) {
+                vertices[ihi] = xe; scores[ihi] = ye;
+              } else {
+                vertices[ihi] = xr; scores[ihi] = yr;
+              }
+            } else if (yr < scores[inhi]) {
+              vertices[ihi] = xr; scores[ihi] = yr;
+            } else {
+              const xc = [];
+              if (yr < scores[ihi]) {
+                for (let d = 0; d < k; d++) xc.push(Math.max(0.01, Math.min(5.0, xBar[d] + 0.5 * (xr[d] - xBar[d]))));
+              } else {
+                for (let d = 0; d < k; d++) xc.push(Math.max(0.01, Math.min(5.0, xBar[d] - 0.5 * (xBar[d] - vertices[ihi][d]))));
+              }
+              const yc = evaluateError(subToFull(xc));
+              if (yc < Math.min(yr, scores[ihi])) {
+                vertices[ihi] = xc; scores[ihi] = yc;
+              } else {
+                for (let j = 1; j <= k; j++) {
+                  for (let d = 0; d < k; d++) vertices[j][d] = Math.max(0.01, Math.min(5.0, vertices[ilo][d] + 0.5 * (vertices[j][d] - vertices[ilo][d])));
+                  scores[j] = evaluateError(subToFull(vertices[j]));
+                }
+              }
+            }
+          }
+        }
+
+        if (clientOptimizerCancelRequested) {
+          renderOptimizerStatus({
+            status: "CANCELLED",
+            method: method,
+            methodName: methodName,
+            message: "Optimización cancelada por el usuario.",
+          });
+        } else {
+          const finalParams = {
+            v0: Number(bestPoint[0].toFixed(3)),
+            u0: Number(bestPoint[1].toFixed(3)),
+            sigma: Number(bestPoint[2].toFixed(3)),
+            alignment: Number(bestPoint[3].toFixed(3)),
+          };
+          renderOptimizerStatus({
+            status: "COMPLETE",
+            method: method,
+            methodName: methodName,
+            error: bestError,
+            params: finalParams,
+            message: `Optimización con ${methodName} finalizada con éxito. Parámetros aplicados al simulador.`,
+          });
+        }
+      } catch (err) {
+        renderOptimizerStatus({ status: "ERROR", message: `Error en optimización: ${err.message}` });
+      } finally {
+        clientOptimizerActive = false;
+      }
+    }
+
+    function enableClientMode() {
+      if (isClientMode) return;
+      isClientMode = true;
+      if (stream) {
+        stream.close();
+        stream = undefined;
+      }
+      status.textContent = "● MODO WEB (STANDALONE)";
+      status.style.color = "var(--accent)";
+      const eng = document.getElementById("verificationEngine");
+      if (eng) eng.textContent = "MOTOR: NAVEGADOR (STANDALONE)";
+      startClientSimulation();
+    }
+
+    function connect() {
+      const isStaticDeploy = window.location.protocol === "file:" || window.location.hostname.endsWith("github.io");
+      if (isStaticDeploy) {
+        enableClientMode();
+        return;
+      }
+      if (stream?.readyState === EventSource.OPEN || stream?.readyState === EventSource.CONNECTING) return;
+      try {
+        stream = new EventSource("/events");
+        stream.onopen = () => {
+          isClientMode = false;
+          if (clientSimTimer) { clearInterval(clientSimTimer); clientSimTimer = null; }
+          lastReceivedAt = Date.now();
+          status.textContent = "● SERVIDOR PYTHON EN LÍNEA";
+          status.style.color = "var(--mint)";
+          const eng = document.getElementById("verificationEngine");
+          if (eng) eng.textContent = "MOTOR: SERVIDOR PYTHON";
+          postControl({ ...params, equations });
+        };
+        stream.onmessage = (event) => {
+          const payload = JSON.parse(event.data);
+          if (payload.type === "optimizer") renderOptimizerStatus(payload.optimizer);
+          else receiveTelemetry(payload);
+        };
+        stream.onerror = () => {
+          status.textContent = "detectando servidor...";
+          status.style.color = "#ffcf66";
+          stream.close();
+          stream = undefined;
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(() => {
+            if (!isClientMode && (!stream || stream.readyState !== EventSource.OPEN)) {
+              enableClientMode();
+            }
+          }, 1500);
+        };
+      } catch (e) {
+        enableClientMode();
+      }
     }
 
     setInterval(() => {
-      if (stream?.readyState === EventSource.OPEN && lastReceivedAt && Date.now() - lastReceivedAt > 2000) {
+      if (!isClientMode && stream?.readyState === EventSource.OPEN && lastReceivedAt && Date.now() - lastReceivedAt > 2500) {
         status.textContent = "restarting stream";
         stream.close();
         connect();
       }
-    }, 1000);
+    }, 1200);
 
     function updateParameter(input) {
       const value = Number(input.value);

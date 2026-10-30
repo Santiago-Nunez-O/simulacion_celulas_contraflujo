@@ -78,24 +78,36 @@ originales despues de confirmar la advertencia. El boton `CAMERA / SCAN WHITEBOA
 solicita la camara, captura la pizarra y usa OCR para dejar el texto detectado en el
 editor antes de incorporarlo con `ADD`.
 
-El panel de optimizacion solo se muestra mientras el estado recibido sea
-`OPTIMIZING`. El control de tiempo usa segundos transcurridos, permite pausar la vista,
-buscar estados anteriores y volver a `EN VIVO`; mantiene hasta cinco minutos de
-historial reciente. La simulacion conserva las posiciones y el generador aleatorio
-entre bloques de transmision, por lo que no reinicia el movimiento cada 20 segundos.
+El panel de optimización cuenta con botón de acceso directo `⚡ OPTIMIZACIÓN` en la barra del simulador y un selector de métodos dentro del panel lateral de ajustes. Se incluyen las técnicas analizadas en el cuaderno:
+1. **Descenso por Coordenadas (Coordinate Descent)**: Búsqueda acotada coordenada por coordenada, rápida y determinista.
+2. **Downhill Simplex (Nelder-Mead / Amoeba)**: Método geométrico sin derivadas que deforma un simplex multidimensional (reflexión, expansión, contracción y contracción múltiple).
+3. **Recocido Simulado (Simulated Annealing)**: Búsqueda estocástica basada en fluctuaciones térmicas decrecientes para evitar estancarse en mínimos locales.
+4. **Scipy Nelder-Mead**: Versión estándar de Nelder-Mead de la librería Scipy (cuando está disponible).
+5. **Scipy Dual Annealing**: Algoritmo global de Scipy con recocido dual y refinamiento local.
 
-El boton `AJUSTES` abre el panel lateral. Su control de sensibilidad cambia el
-incremento aplicado al mover los cuatro sliders fisicos, desde 0.001 (fino) hasta
-0.1 (amplio); los valores tambien pueden editarse directamente. `OPTIMIZAR` ejecuta
-una busqueda por coordenadas acotada que minimiza la diferencia normalizada entre
-MSD, autocorrelacion, correlacion espacial y `g(r)` de la simulacion y la referencia
-del notebook (parametros `V0 = u0 = sigma = w = 1`). En el panel se pueden cambiar
-por parametro el vector objetivo, el punto inicial y cuales variables se buscaran;
-los valores del notebook y los cuatro parametros activos son la configuracion inicial.
-La configuracion se guarda en el navegador. Los parametros no seleccionados quedan
-fijos al valor del punto inicial. Al terminar aplica el vector encontrado; si la
-configuracion de simulacion cambia durante la optimizacion, esta se cancela.
-Para mantener la respuesta interactiva, la busqueda usa hasta 40 celulas y 50 pasos.
+Para verificar la optimización en tiempo real ("Optimization Trace & Verification"), la interfaz muestra:
+- Estado del optimizador en vivo (IDLE, OPTIMIZANDO, CONVERGIDO, CANCELADO).
+- Contador de iteraciones y evaluaciones totales de la simulación.
+- Error cuadrático normalizado en cada paso y barra de progreso porcentual.
+- Panel de traza con registro detallado por paso (iteración, método, error y vector de parámetros evaluado).
+- Posibilidad de cancelar en cualquier momento con el botón `CANCELAR`.
+- Botón `PANEL DE TRAZA` para inspeccionar la evolución en cualquier momento.
+
+## Despliegue en la Web con GitHub Pages
+
+El proyecto está diseñado con **arquitectura dual**:
+- **Modo Servidor Python**: Al ejecutar `python server.py`, el servidor realiza los cálculos y transmite los datos por SSE (`/events`).
+- **Modo Web Autónomo (GitHub Pages / Standalone)**: Al abrir `index.html` en GitHub Pages (o sin servidor Python), el navegador ejecuta automáticamente el motor de física, el cálculo de los 5 observables y los algoritmos de optimización directamente en JavaScript a 60 FPS, sin requerir ningún backend.
+
+### Cómo configurar GitHub Pages en GitHub
+
+1. Sube los cambios al repositorio (`git push origin martin` o a tu rama principal).
+2. Entra en tu repositorio en GitHub y ve a la pestaña **Settings** (Configuración).
+3. En el menú lateral izquierdo, haz clic en **Pages**.
+4. En la sección **Build and deployment**:
+   - **Opción recomendada (Automática con GitHub Actions)**: En **Source**, selecciona **GitHub Actions**. El repositorio ya incluye el flujo `.github/workflows/deploy-pages.yml` que desplegará el proyecto automáticamente en cada push.
+   - **Opción estándar**: En **Source**, selecciona **Deploy from a branch**, elige la rama (por ejemplo, `martin` o `main`) y la carpeta `/ (root)`. Haz clic en **Save**.
+5. Espera un minuto a que finalice el despliegue y accede a la URL pública: `https://<usuario>.github.io/simulacion_celulas_contraflujo/`.
 
 Con los cuatro parametros en cero las celulas permanecen quietas. La propulsion sola,
 con ruido, repulsion y alineacion desactivados, produce rapidez constante. Con ruido o
@@ -105,13 +117,13 @@ En el panel de telemetria se pueden seleccionar los cinco resultados estadistico
 del notebook: `MSD`, distribucion de velocidades, autocorrelacion temporal,
 correlacion espacial y `g(r)`.
 
-Los graficos estadisticos del dashboard siguen ahora la misma estructura que
+Los graficos estadisticos del dashboard siguen la misma estructura que
 `observables.py` y el notebook: `Desplazamiento Cuadratico Medio (MSD)`,
 `Distribucion de Velocidades` con `P(v_x)` y `P(v_y)`, `Autocorrelacion Temporal`
 con `C_xx` y `C_yy`, `Correlacion Espacial de Velocidades` y la funcion de pares
-`g(r)`. Las series se calculan en el servidor Python y se transmiten por SSE.
+`g(r)`.
 
 La interfaz incluye temas oscuro y claro, guardados en el navegador. En `MODEL CONTROL`
 se pueden cambiar `N / nodes` y `L / canvas size`; ambos valores reinician la poblacion
-con el nuevo dominio y se transmiten por HTTP. El servidor limita los nodos a
-8-300 y el dominio a 40-300 para mantener la simulacion interactiva.
+con el nuevo dominio. En el modo servidor el backend limita los nodos a 8-300 y el dominio
+a 40-300 para mantener la simulacion interactiva.
